@@ -5,7 +5,7 @@ use phf::phf_map;
 
 use crate::token::Token;
 
-struct Lexer<'a> {
+pub struct Lexer<'a> {
     input: &'a str,
     position: usize,
     read_position: usize,
@@ -26,7 +26,7 @@ impl<'a> Lexer<'a> {
         lexer
     }
 
-    fn next_token(&mut self) -> Result<Token> {
+    pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
 
         let token = match self.ch {
@@ -65,20 +65,20 @@ impl<'a> Lexer<'a> {
                 if ch.is_alphabetic() {        
                     let literal = self.read_identifier();
 
-                    return Ok(Token::lookup_ident(&literal));
+                    return Token::lookup_ident(&literal);
                 } else if ch.is_ascii_digit() {
                     let literal = self.read_number();
 
-                    return Ok(Token::Int(literal));
+                    return Token::Int(literal);
                 } else {
-                    return Ok(Token::Illegal);
+                    return Token::Illegal;
                 }
             }
         };
 
         self.read_char();
 
-        Ok(token)
+        token
     }
 
     fn peek_char(&self) -> char {
@@ -232,9 +232,8 @@ mod tests {
         let mut lexer = Lexer::new(input.as_str());
 
         for expected_token in expected_tokens {
-            let token = lexer.next_token()?;
+            let token = lexer.next_token();
 
-            println!("{:?}", token);
             assert_eq!(token, expected_token);
         }
 
