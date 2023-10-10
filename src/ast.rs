@@ -80,6 +80,28 @@ impl Statement for LetStatement {
     fn statement_node(&self) {}
 }
 
+pub struct ReturnStatement {
+    pub token: Token,
+    pub return_value: Option<Box<dyn Expression>>
+}
+
+impl Node for ReturnStatement {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn token_literal(&self) -> String {
+        match &self.token {
+            Token::Return => String::from("return"),
+            _ => String::from(""),
+        }
+    }
+}
+
+impl Statement for ReturnStatement {
+    fn statement_node(&self) {}
+}
+
 pub struct Program {
     pub statements: Vec<Box<dyn Statement>>,
 }

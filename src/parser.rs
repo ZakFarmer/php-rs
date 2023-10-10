@@ -1,4 +1,4 @@
-use crate::{token::Token, lexer::Lexer, ast::{Program, Statement, LetStatement, Identifier}};
+use crate::{token::Token, lexer::Lexer, ast::{Program, Statement, LetStatement, Identifier, ReturnStatement}};
 
 pub struct Parser<'a> {
     lexer: Lexer<'a>,
@@ -14,7 +14,7 @@ impl<'a> Parser<'a> {
         &self.errors
     }
 
-    fn peek_error(&mut self, token: Token) -> () {
+    fn peek_error(&mut self, token: &Token) -> () {
         let message = format!("Expected next token to be {}, got {}", token, self.peek_token.as_ref().unwrap());
 
         self.errors.push(message);
@@ -44,17 +44,19 @@ impl<'a> Parser<'a> {
     }
 
     pub fn expect_peek(&mut self, token: Token) -> bool {
-        if self.peek_token_is(token) {
+        if self.peek_token_is(&token) {
             self.next_token();
 
             true
         } else {
+            self.peek_error(&token);
+
             false
         }
     }
 
-    fn peek_token_is(&mut self, token: Token) -> bool {
-        self.peek_token == Some(token)
+    fn peek_token_is(&mut self, token: &Token) -> bool {
+        self.peek_token == Some(token.to_owned())
     }
 
     pub fn parse_program(&mut self) -> Program {
@@ -76,12 +78,12 @@ impl<'a> Parser<'a> {
     pub fn parse_statement(&mut self) -> Option<Box<dyn Statement>> {
         match self.current_token {
             Some(Token::Let) => self.parse_let_statement(),
+            Some(Token::Return) => self.parse_return_statement(),
             _ => None
         }
     }
 
     fn parse_let_statement(&mut self) -> Option<Box<dyn Statement>> {
-        // Ensure the current token is `let`
         let current_token = self.current_token.clone().unwrap();
         if !matches!(current_token, Token::Let) {
             self.errors.push(format!("Expected 'let', got {:?}", current_token));
@@ -89,7 +91,8 @@ impl<'a> Parser<'a> {
         }
     
         // Expect the next token to be an identifier
-        self.next_token(); 
+        self.next_token();
+
         let name_token = self.current_token.clone().unwrap();
         let name_value = match &name_token {
             Token::Ident(x) => x.clone(),
@@ -117,6 +120,26 @@ impl<'a> Parser<'a> {
             },
             token: current_token,
             value: None  // Placeholder, you might parse expressions here in the future
+        }))
+    }
+
+    fn parse_return_statement(&mut self) -> Option<Box<dyn Statement>> {
+        let current_token = self.current_token.clone().unwrap();
+        
+        if !matches!(current_token, Token::Return) {
+            self.errors.push(format!("Expected 'return', got {:?}", current_token));
+            return None;
+        }
+
+        self.next_token();
+
+        while !self.current_token_is(Token::Semicolon) {
+            self.next_token();
+        }
+    
+        Some(Box::new(ReturnStatement {
+            token: current_token,
+            return_value: None  // Placeholder, you might parse expressions here in the future
         }))
     }
     
@@ -156,6 +179,29 @@ mod tests {
             let statement = &program.statements[i];
 
             assert_let_statement(statement, expected_identifiers[i])?;
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_return_statements() -> Result<(), Error> {
+        let input = "
+            return 5;
+            return 10;
+            return 993322;
+        ";
+
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+
+        let program = parser.parse_program();
+        check_parser_errors(&parser)?;
+
+        assert_eq!(3, program.statements.len());
+
+        for statement in program.statements {
+            assert_eq!("return", statement.token_literal());
         }
 
         Ok(())
