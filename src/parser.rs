@@ -77,20 +77,19 @@ impl<'a> Parser<'a> {
 
     pub fn parse_statement(&mut self) -> Option<Box<dyn Statement>> {
         match self.current_token {
-            Some(Token::Let) => self.parse_let_statement(),
+            Some(Token::Dollar) => self.parse_dollar_statement(),
             Some(Token::Return) => self.parse_return_statement(),
             _ => None
         }
     }
 
-    fn parse_let_statement(&mut self) -> Option<Box<dyn Statement>> {
+    fn parse_dollar_statement(&mut self) -> Option<Box<dyn Statement>> {
         let current_token = self.current_token.clone().unwrap();
-        if !matches!(current_token, Token::Let) {
-            self.errors.push(format!("Expected 'let', got {:?}", current_token));
+        if !matches!(current_token, Token::Dollar) {
+            self.errors.push(format!("Expected '$', got {:?}", current_token));
             return None;
         }
     
-        // Expect the next token to be an identifier
         self.next_token();
 
         let name_token = self.current_token.clone().unwrap();
@@ -102,30 +101,27 @@ impl<'a> Parser<'a> {
             }
         };
     
-        // Expect the next token to be `=`
         if !self.expect_peek(Token::Assign) {
             return None;
         }
     
-        // Skip tokens until `;`
         while !self.current_token_is(Token::Semicolon) {
             self.next_token();
         }
     
-        // Construct and return the `LetStatement`
         Some(Box::new(LetStatement {
             name: Identifier {
                 token: name_token,
                 value: name_value,
             },
             token: current_token,
-            value: None  // Placeholder, you might parse expressions here in the future
+            value: None
         }))
     }
 
     fn parse_return_statement(&mut self) -> Option<Box<dyn Statement>> {
         let current_token = self.current_token.clone().unwrap();
-        
+
         if !matches!(current_token, Token::Return) {
             self.errors.push(format!("Expected 'return', got {:?}", current_token));
             return None;
@@ -156,9 +152,9 @@ mod tests {
     #[test]
     fn test_let_statements() -> Result<(), Error> {
         let input = "
-            let x = 5;
-            let y = 10;
-            let foobar = 812303;
+            $x = 5;
+            $y = 10;
+            $foobar = 812303;
         ";
 
         let lexer = Lexer::new(input);
@@ -223,7 +219,7 @@ mod tests {
     }
 
     fn assert_let_statement(statement: &Box<dyn Statement>, name: &str) -> Result<(), Error> {
-        assert_eq!("let", statement.token_literal());
+        assert_eq!("$", statement.token_literal());
 
         let _let_statement = statement.as_any().downcast_ref::<LetStatement>();
 

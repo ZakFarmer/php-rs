@@ -51,6 +51,24 @@ impl Expression for Identifier {
     }
 }
 
+pub struct ExpressionStatement {
+    pub token: Token,
+    pub expression: Option<Box<dyn Expression>>,
+}
+
+impl Node for ExpressionStatement {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn token_literal(&self) -> String {
+        match &self.token {
+            Token::Ident(x) => x.to_owned(),
+            _ => String::from(""),
+        }
+    }
+}
+
 pub struct LetStatement {
     pub token: Token,
     pub name: Identifier,
@@ -70,7 +88,7 @@ impl Node for LetStatement {
 
     fn token_literal(&self) -> String {
         match &self.token {
-            Token::Let => String::from("let"),
+            Token::Dollar => String::from("$"),
             _ => String::from(""),
         }
     }
@@ -83,6 +101,12 @@ impl Statement for LetStatement {
 pub struct ReturnStatement {
     pub token: Token,
     pub return_value: Option<Box<dyn Expression>>
+}
+
+impl std::fmt::Display for ReturnStatement {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{};", self.token_literal())
+    }
 }
 
 impl Node for ReturnStatement {

@@ -19,7 +19,7 @@ pub enum Token {
     LBrace,
     RBrace,
     Function,
-    Let,
+    Dollar,
     Minus,
     Slash,
     Asterisk,
@@ -35,8 +35,7 @@ pub enum Token {
 impl Token {
     pub fn lookup_ident(ident: &str) -> Token {
         match ident {
-            "fn" => Token::Function,
-            "let" => Token::Let,
+            "function" => Token::Function,
             "true" => Token::Bool(true),
             "false" => Token::Bool(false),
             "if" => Token::If,
@@ -64,8 +63,8 @@ impl std::fmt::Display for Token {
             Token::RParen => ")",
             Token::LBrace => "{",
             Token::RBrace => "}",
-            Token::Function => "fn",
-            Token::Let => "let",
+            Token::Function => "function",
+            Token::Dollar => "$",
             Token::Minus => "-",
             Token::Slash => "/",
             Token::Asterisk => "*",
