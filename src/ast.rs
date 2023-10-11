@@ -4,7 +4,7 @@ use crate::token::Token;
 
 pub trait Node {
     fn as_any(&self) -> &dyn Any;
-    fn token_literal(&self) -> String;
+    fn token_literal(&self) -> &str;
 }
 
 pub trait Statement: Node {
@@ -19,6 +19,12 @@ impl std::fmt::Display for dyn Statement {
 
 pub trait Expression: Node {
     fn expression_node(&self);
+}
+
+impl std::fmt::Display for dyn Expression {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.token_literal())
+    }
 }
 
 pub struct Identifier {
@@ -37,11 +43,8 @@ impl Node for Identifier {
         self
     }
 
-    fn token_literal(&self) -> String {
-        match &self.token {
-            Token::Ident(x) => x.to_owned(),
-            _ => String::from(""),
-        }
+    fn token_literal(&self) -> &str {
+        &self.token.literal
     }
 }
 
@@ -61,10 +64,20 @@ impl Node for ExpressionStatement {
         self
     }
 
-    fn token_literal(&self) -> String {
-        match &self.token {
-            Token::Ident(x) => x.to_owned(),
-            _ => String::from(""),
+    fn token_literal(&self) -> &str {
+        &self.token.literal
+    }
+}
+
+impl Statement for ExpressionStatement {
+    fn statement_node(&self) {}
+}
+
+impl std::fmt::Display for ExpressionStatement {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match &self.expression {
+            Some(expr) => write!(f, "{}", expr),
+            None => Ok(())
         }
     }
 }
@@ -86,11 +99,8 @@ impl Node for LetStatement {
         self
     }
 
-    fn token_literal(&self) -> String {
-        match &self.token {
-            Token::Dollar => String::from("$"),
-            _ => String::from(""),
-        }
+    fn token_literal(&self) -> &str {
+        &self.token.literal
     }
 }
 
@@ -114,11 +124,8 @@ impl Node for ReturnStatement {
         self
     }
 
-    fn token_literal(&self) -> String {
-        match &self.token {
-            Token::Return => String::from("return"),
-            _ => String::from(""),
-        }
+    fn token_literal(&self) -> &str {
+        &self.token.literal
     }
 }
 
@@ -143,11 +150,11 @@ impl Node for Program {
         self
     }
 
-    fn token_literal(&self) -> String {
+    fn token_literal(&self) -> &str {
         if self.statements.len() > 0 {
             self.statements[0].token_literal()
         } else {
-            String::new()
+            ""
         }
     }
 }

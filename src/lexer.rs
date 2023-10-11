@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::Result;
 use phf::phf_map;
 
-use crate::token::Token;
+use crate::token::{Token, TokenType};
 
 pub struct Lexer<'a> {
     input: &'a str,
@@ -29,57 +29,64 @@ impl<'a> Lexer<'a> {
     pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
 
-        let token = match self.ch {
+        let (token_type, literal) = match self.ch {
             Some('=') => {
                 if self.peek_char() == '=' {
                     self.read_char();
-
-                    Token::Eq
+                    (TokenType::Eq, "==".to_string())
                 } else {
-                    Token::Assign
+                    (TokenType::Assign, "=".to_string())
                 }
             },
-            Some(';') => Token::Semicolon,
-            Some('(') => Token::LParen,
-            Some(')') => Token::RParen,
-            Some('{') => Token::LBrace,
-            Some('}') => Token::RBrace,
-            Some(',') => Token::Comma,
-            Some('+') => Token::Plus,
+            Some(';') => (TokenType::Semicolon, ";".to_string()),
+            Some('(') => (TokenType::LParen, "(".to_string()),
+            Some(')') => (TokenType::RParen, ")".to_string()),
+            Some(',') => (TokenType::Comma, ",".to_string()),
+            Some('+') => (TokenType::Plus, "+".to_string()),
+            Some('{') => (TokenType::LBrace, "{".to_string()),
+            Some('}') => (TokenType::RBrace, "}".to_string()),
+            Some('-') => (TokenType::Minus, "-".to_string()),
             Some('!') => {
                 if self.peek_char() == '=' {
                     self.read_char();
-
-                    Token::NotEq
+                    (TokenType::NotEq, "!=".to_string())
                 } else {
-                    Token::Bang
+                    (TokenType::Bang, "!".to_string())
                 }
             },
-            Some('-') => Token::Minus,
-            Some('/') => Token::Slash,
-            Some('*') => Token::Asterisk,
-            Some('<') => Token::Lt,
-            Some('>') => Token::Gt,
-            Some('$') => Token::Dollar,
-            None => Token::Eof,
+            Some('/') => (TokenType::Slash, "/".to_string()),
+            Some('*') => (TokenType::Asterisk, "*".to_string()),
+            Some('<') => (TokenType::Lt, "<".to_string()),
+            Some('>') => (TokenType::Gt, ">".to_string()),
+            Some('$') => (TokenType::Dollar, "$".to_string()),
             Some(ch) => {
-                if ch.is_alphabetic() {        
+                if ch.is_alphabetic() {
                     let literal = self.read_identifier();
 
-                    return Token::lookup_ident(&literal);
+                    return Token {
+                        token_type: TokenType::lookup_ident(&literal),
+                        literal
+                    };
                 } else if ch.is_ascii_digit() {
                     let literal = self.read_number();
 
-                    return Token::Int(literal);
+                    return Token {
+                        token_type: TokenType::Int,
+                        literal
+                    };
                 } else {
-                    return Token::Illegal;
+                    (TokenType::Illegal, ch.to_string())
                 }
             }
+            None => (TokenType::Eof, "".to_string()),
         };
 
         self.read_char();
-
-        token
+    
+        Token {
+            token_type,
+            literal,
+        }
     }
 
     fn peek_char(&self) -> char {
@@ -141,6 +148,8 @@ impl<'a> Lexer<'a> {
 mod tests {
     use anyhow::Error;
 
+    use crate::token::TokenType;
+
     use super::*;
 
     #[test]
@@ -158,50 +167,168 @@ mod tests {
         ");
 
         let expected_tokens = [
-            Token::Dollar,
-            Token::Ident(String::from("five")),
-            Token::Assign,
-            Token::Int(String::from("5")),
-            Token::Semicolon,
-            Token::Dollar,
-            Token::Ident(String::from("ten")),
-            Token::Assign,
-            Token::Ident(String::from("five")),
-            Token::Plus,
-            Token::Int(String::from("5")),
-            Token::Semicolon,
-            Token::Dollar,
-            Token::Ident(String::from("add")),
-            Token::Assign,
-            Token::Function,
-            Token::LParen,
-            Token::Ident(String::from("x")),
-            Token::Comma,
-            Token::Ident(String::from("y")),
-            Token::RParen,
-            Token::LBrace,
-            Token::Return,
-            Token::Ident(String::from("x")),
-            Token::Plus,
-            Token::Ident(String::from("y")),
-            Token::Semicolon,
-            Token::RBrace,
-            Token::Dollar,
-            Token::Ident(String::from("result")),
-            Token::Assign,
-            Token::Ident(String::from("add")),
-            Token::LParen,
-            Token::Ident(String::from("five")),
-            Token::Comma,
-            Token::Ident(String::from("ten")),
-            Token::RParen,
-            Token::Semicolon,
+            Token {
+                token_type: TokenType::Dollar,
+                literal: "$".to_string(),
+            },
+            Token {
+                token_type: TokenType::Ident,
+                literal: "five".to_string(),
+            },
+            Token {
+                token_type: TokenType::Assign,
+                literal: "=".to_string(),
+            },
+            Token {
+                token_type: TokenType::Int,
+                literal: "5".to_string(),
+            },
+            Token {
+                token_type: TokenType::Semicolon,
+                literal: ";".to_string(),
+            },
+            Token {
+                token_type: TokenType::Dollar,
+                literal: "$".to_string(),
+            },
+            Token {
+                token_type: TokenType::Ident,
+                literal: "ten".to_string(),
+            },
+            Token {
+                token_type: TokenType::Assign,
+                literal: "=".to_string(),
+            },
+            Token {
+                token_type: TokenType::Ident,
+                literal: "five".to_string(),
+            },
+            Token {
+                token_type: TokenType::Plus,
+                literal: "+".to_string(),
+            },
+            Token {
+                token_type: TokenType::Int,
+                literal: "5".to_string(),
+            },
+            Token {
+                token_type: TokenType::Semicolon,
+                literal: ";".to_string(),
+            },
+            Token {
+                token_type: TokenType::Dollar,
+                literal: "$".to_string(),
+            },
+            Token {
+                token_type: TokenType::Ident,
+                literal: "add".to_string(),
+            },
+            Token {
+                token_type: TokenType::Assign,
+                literal: "=".to_string(),
+            },
+            Token {
+                token_type: TokenType::Function,
+                literal: "function".to_string(),
+            },
+            Token {
+                token_type: TokenType::LParen,
+                literal: "(".to_string(),
+            },
+            Token {
+                token_type: TokenType::Ident,
+                literal: "x".to_string(),
+            },
+            Token {
+                token_type: TokenType::Comma,
+                literal: ",".to_string(),
+            },
+            Token {
+                token_type: TokenType::Ident,
+                literal: "y".to_string(),
+            },
+            Token {
+                token_type: TokenType::RParen,
+                literal: ")".to_string(),
+            },
+            Token {
+                token_type: TokenType::LBrace,
+                literal: "{".to_string(),
+            },
+            Token {
+                token_type: TokenType::Return,
+                literal: "return".to_string(),
+            },
+            Token {
+                token_type: TokenType::Ident,
+                literal: "x".to_string(),
+            },
+            Token {
+                token_type: TokenType::Plus,
+                literal: "+".to_string(),
+            },
+            Token {
+                token_type: TokenType::Ident,
+                literal: "y".to_string(),
+            },
+            Token {
+                token_type: TokenType::Semicolon,
+                literal: ";".to_string(),
+            },
+            Token {
+                token_type: TokenType::RBrace,
+                literal: "}".to_string(),
+            },
+            Token {
+                token_type: TokenType::Dollar,
+                literal: "$".to_string(),
+            },
+            Token {
+                token_type: TokenType::Ident,
+                literal: "result".to_string(),
+            },
+            Token {
+                token_type: TokenType::Assign,
+                literal: "=".to_string(),
+            },
+            Token {
+                token_type: TokenType::Ident,
+                literal: "add".to_string(),
+            },
+            Token {
+                token_type: TokenType::LParen,
+                literal: "(".to_string(),
+            },
+            Token {
+                token_type: TokenType::Ident,
+                literal: "five".to_string(),
+            },
+            Token {
+                token_type: TokenType::Comma,
+                literal: ",".to_string(),
+            },
+            Token {
+                token_type: TokenType::Ident,
+                literal: "ten".to_string(),
+            },
+            Token {
+                token_type: TokenType::RParen,
+                literal: ")".to_string(),
+            },
+            Token {
+                token_type: TokenType::Semicolon,
+                literal: ";".to_string(),
+            },
         ];
 
         let mut lexer = Lexer::new(input.as_str());
 
         for expected_token in expected_tokens {
             let token = lexer.next_token();
+
+            if matches!(token.token_type, TokenType::Eof) {
+                return Ok(());
+            }
 
             assert_eq!(token, expected_token);
         }

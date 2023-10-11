@@ -1,11 +1,11 @@
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum Token {
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+pub enum TokenType {
     Illegal,
     Eof,
 
-    Ident(String),
-    Int(String),
-    Bool(bool),
+    Ident,
+    Int,
+    Bool,
 
     Eq,
     NotEq,
@@ -32,51 +32,62 @@ pub enum Token {
     Return,
 }
 
-impl Token {
-    pub fn lookup_ident(ident: &str) -> Token {
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Token {
+    pub token_type: TokenType,
+    pub literal: String,
+}
+
+impl TokenType {
+    pub fn lookup_ident(ident: &str) -> TokenType {
         match ident {
-            "function" => Token::Function,
-            "true" => Token::Bool(true),
-            "false" => Token::Bool(false),
-            "if" => Token::If,
-            "else" => Token::Else,
-            "return" => Token::Return,
-            _ => Token::Ident(ident.to_string()),
+            "function" => TokenType::Function,
+            "true" | "false" => TokenType::Bool,
+            "if" => TokenType::If,
+            "else" => TokenType::Else,
+            "return" => TokenType::Return,
+            _ => TokenType::Ident,
         }
     }
 }
 
 impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let token = match self {
-            Token::Illegal => "Illegal",
-            Token::Eof => "Eof",
-            Token::Ident(x) => x,
-            Token::Int(x) => x,
-            Token::Eq => "==",
-            Token::NotEq => "!=",
-            Token::Assign => "=",
-            Token::Plus => "+",
-            Token::Comma => ",",
-            Token::Semicolon => ";",
-            Token::LParen => "(",
-            Token::RParen => ")",
-            Token::LBrace => "{",
-            Token::RBrace => "}",
-            Token::Function => "function",
-            Token::Dollar => "$",
-            Token::Minus => "-",
-            Token::Slash => "/",
-            Token::Asterisk => "*",
-            Token::Lt => "<",
-            Token::Gt => ">",
-            Token::Bang => "!",
-            Token::If => "if",
-            Token::Else => "else",
-            Token::Return => "return",
-            _ => "",
+        write!(f, "{}", self.literal)
+    }
+}
+
+impl std::fmt::Display for TokenType {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let token_type = match self {
+            TokenType::Illegal => "Illegal",
+            TokenType::Eof => "Eof",
+            TokenType::Ident => "Ident",
+            TokenType::Int => "Int",
+            TokenType::Bool => "Bool",
+            TokenType::Eq => "Eq",
+            TokenType::NotEq => "NotEq",
+            TokenType::Assign => "Assign",
+            TokenType::Plus => "Plus",
+            TokenType::Comma => "Comma",
+            TokenType::Semicolon => "Semicolon",
+            TokenType::LParen => "LParen",
+            TokenType::RParen => "RParen",
+            TokenType::LBrace => "LBrace",
+            TokenType::RBrace => "RBrace",
+            TokenType::Function => "Function",
+            TokenType::Dollar => "Dollar",
+            TokenType::Minus => "Minus",
+            TokenType::Slash => "Slash",
+            TokenType::Asterisk => "Asterisk",
+            TokenType::Lt => "Lt",
+            TokenType::Gt => "Gt",
+            TokenType::Bang => "Bang",
+            TokenType::If => "If",
+            TokenType::Else => "Else",
+            TokenType::Return => "Return",
         };
 
-        write!(f, "{}", token)
+        write!(f, "{}", token_type)
     }
 }

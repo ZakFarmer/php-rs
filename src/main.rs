@@ -1,3 +1,4 @@
+use anyhow::{Result, Error};
 use repl::init_repl;
 
 mod ast;
@@ -10,7 +11,9 @@ mod token;
 const NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-fn main() {
+fn main() -> Result<(), Error>{
     println!("{} interpreter {}", NAME, VERSION);
-    init_repl();
+    init_repl()?;
+
+    Ok(())
 }
