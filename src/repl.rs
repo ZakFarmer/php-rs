@@ -1,8 +1,8 @@
-use std::io::{Read, self, Write};
+use std::io::{self, Write};
 
 use anyhow::{Result, Error};
 
-use crate::{lexer::Lexer, token::{Token, TokenType}, parser::Parser, ast::{LetStatement, ExpressionStatement}};
+use crate::{lexer::Lexer, parser::Parser, ast::LetStatement};
 
 const PROMPT: &str = ">> ";
 
@@ -15,7 +15,7 @@ pub fn init_repl() -> Result<(), Error> {
 
         std::io::stdin().read_line(&mut input).unwrap();
 
-        let mut lexer = Lexer::new(&input);
+        let lexer = Lexer::new(&input);
         let mut parser = Parser::new(lexer);
 
         let program = parser.parse_program();

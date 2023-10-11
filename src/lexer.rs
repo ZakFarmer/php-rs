@@ -1,8 +1,3 @@
-use std::collections::HashMap;
-
-use anyhow::Result;
-use phf::phf_map;
-
 use crate::token::{Token, TokenType};
 
 pub struct Lexer<'a> {
