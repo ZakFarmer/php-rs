@@ -112,9 +112,8 @@ impl<'a> Parser<'a> {
         parser.register_prefix(TokenType::Int, |p| Parser::parse_integer_literal(p));
         parser.register_prefix(TokenType::Bang, |p| Parser::parse_prefix_expression(p));
         parser.register_prefix(TokenType::Minus, |p| Parser::parse_prefix_expression(p));
-        parser.register_prefix(TokenType::Dollar, |p| {
-            Parser::parse_variable_reference_expression(p)
-        });
+        parser.register_prefix(TokenType::LParen, |p| Parser::parse_grouped_expression(p));
+        parser.register_prefix(TokenType::Dollar, |p| Parser::parse_variable_reference_expression(p));
 
         parser.register_infix(TokenType::Plus, |p, left| {
             Parser::parse_infix_expression(p, left)
@@ -396,6 +395,18 @@ impl<'a> Parser<'a> {
         }))
     }
 
+    fn parse_grouped_expression(&mut self) -> Option<Box<dyn Expression>> {
+        self.next_token();
+
+        let expression = self.parse_expression(Precedence::Lowest);
+
+        if !self.expect_peek(TokenType::RParen) {
+            return None;
+        }
+
+        expression
+    }
+
     fn parse_identifier(&mut self) -> ParseResult {
         let current_token = self.current_token.clone().unwrap();
 
@@ -649,6 +660,15 @@ mod tests {
                 "3 + 4 * 5 == 3 * 1 + 4 * 5",
                 "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
             ),
+            ("true", "true"),
+            ("false", "false"),
+            ("3 > 5 == false", "((3 > 5) == false)"),
+            ("3 < 5 == true", "((3 < 5) == true)"),
+            ("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)"),
+            ("(5 + 5) * 2", "((5 + 5) * 2)"),
+            ("2 / (5 + 5)", "(2 / (5 + 5))"),
+            ("-(5 + 5)", "(-(5 + 5))"),
+            ("!(true == true)", "(!(true == true))"),
         ];
 
         for (input, expected) in tests.iter() {
