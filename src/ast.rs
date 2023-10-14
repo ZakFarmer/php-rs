@@ -26,6 +26,10 @@ impl std::fmt::Display for dyn Statement {
                 let variable_assignment = self.as_any().downcast_ref::<VariableAssignment>().unwrap();
                 format!("{:?}", variable_assignment)
             },
+            id if id == std::any::TypeId::of::<VariableReference>() => {
+                let variable_reference = self.as_any().downcast_ref::<VariableReference>().unwrap();
+                format!("${:?}", variable_reference)
+            },
             _ => "".to_string()
         };
 
