@@ -4,7 +4,7 @@ use anyhow::{Result, Error};
 use log::{info};
 use rustyline::error::ReadlineError;
 
-use crate::{lexer::Lexer, parser::Parser, ast::{VariableAssignment, Statement, VariableReference}};
+use crate::{lexer::Lexer, parser::Parser, ast::{VariableAssignment, Statement, VariableReference, ExpressionStatement}};
 
 const PROMPT: &str = ">> ";
 
@@ -32,7 +32,7 @@ pub fn init_repl() -> Result<(), Error> {
                 parser.check_errors()?;
 
                 for statement in program.statements {
-                    print_statement(statement);
+                    print_statement(&statement);
                 }
             },
             Err(ReadlineError::Interrupted) => {
@@ -53,7 +53,7 @@ pub fn init_repl() -> Result<(), Error> {
     Ok(())
 }
 
-fn print_statement(statement: Box<dyn Statement>) {
+pub fn print_statement(statement: &Box<dyn Statement>) {
     match statement.as_any().type_id() {
         id if id == TypeId::of::<VariableAssignment>() => {
             let variable_assignment = statement.as_any().downcast_ref::<VariableAssignment>().unwrap();
@@ -61,8 +61,12 @@ fn print_statement(statement: Box<dyn Statement>) {
         },
         id if id == TypeId::of::<VariableReference>() => {
             let variable_reference = statement.as_any().downcast_ref::<VariableReference>().unwrap();
-            println!("Ref: {:?}", variable_reference);
-        }
+            println!("{:?}", variable_reference);
+        },
+        id if id == TypeId::of::<ExpressionStatement>() => {
+            let expression_statement = statement.as_any().downcast_ref::<ExpressionStatement>().unwrap();
+            println!("{:?}", expression_statement);
+        },
         _ => println!("Unknown statement type: {:?}", statement.as_any().type_id()),
     }
 }

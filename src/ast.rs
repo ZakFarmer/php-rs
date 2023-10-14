@@ -13,13 +13,45 @@ pub trait Statement: Node {
 
 impl std::fmt::Display for dyn Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.token_literal())
+        let statement_string = match self.as_any().type_id() {
+            id if id == std::any::TypeId::of::<ExpressionStatement>() => {
+                let expression_statement = self.as_any().downcast_ref::<ExpressionStatement>().unwrap();
+                format!("{:?}", expression_statement)
+            },
+            id if id == std::any::TypeId::of::<ReturnStatement>() => {
+                let return_statement = self.as_any().downcast_ref::<ReturnStatement>().unwrap();
+                format!("{:?}", return_statement)
+            },
+            id if id == std::any::TypeId::of::<VariableAssignment>() => {
+                let variable_assignment = self.as_any().downcast_ref::<VariableAssignment>().unwrap();
+                format!("{:?}", variable_assignment)
+            },
+            _ => "".to_string()
+        };
+
+        write!(f, "{}", statement_string)
     }
 }
 
 impl Debug for dyn Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "Statement: {}", self.token_literal())
+        let statement_string = match self.as_any().type_id() {
+            id if id == std::any::TypeId::of::<ExpressionStatement>() => {
+                let expression_statement = self.as_any().downcast_ref::<ExpressionStatement>().unwrap();
+                format!("Expression: {:?}", expression_statement)
+            },
+            id if id == std::any::TypeId::of::<ReturnStatement>() => {
+                let return_statement = self.as_any().downcast_ref::<ReturnStatement>().unwrap();
+                format!("Return: {:?}", return_statement)
+            },
+            id if id == std::any::TypeId::of::<VariableAssignment>() => {
+                let variable_assignment = self.as_any().downcast_ref::<VariableAssignment>().unwrap();
+                format!("Assignment: {:?}", variable_assignment)
+            },
+            _ => "".to_string()
+        };
+
+        write!(f, "{}", statement_string)
     }
 }
 
@@ -184,7 +216,7 @@ pub struct ReturnStatement {
     pub return_value: Option<Box<dyn Expression>>
 }
 
-impl std::fmt::Display for ReturnStatement {
+impl std::fmt::Debug for ReturnStatement {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{};", self.token_literal())
     }
@@ -280,7 +312,6 @@ impl std::fmt::Debug for Program {
         let mut output = String::new();
 
         for statement in &self.statements {
-            println!("statement: {}", statement);
             output.push_str(&format!("{}", statement));
         }
 

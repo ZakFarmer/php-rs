@@ -449,7 +449,7 @@ mod tests {
 
     use anyhow::{Result, Error};
 
-    use crate::ast::{Statement, VariableAssignment, PrefixExpression, InfixExpression};
+    use crate::{ast::{Statement, VariableAssignment, PrefixExpression, InfixExpression}, repl::print_statement};
 
     #[test]
     fn test_assignment_statements() -> Result<(), Error> {
@@ -548,6 +548,10 @@ mod tests {
     
             let program = parser.parse_program();
             parser.check_errors()?;
+
+            for statement in &program.statements {
+                print_statement(statement);
+            }
     
             assert_eq!(*expected, program.to_string());
         }
