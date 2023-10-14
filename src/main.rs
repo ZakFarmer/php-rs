@@ -1,6 +1,6 @@
 use std::env;
 
-use anyhow::{Result, Error};
+use anyhow::{Error, Result};
 use repl::init_repl;
 
 mod ast;
@@ -13,11 +13,11 @@ mod token;
 pub const NAME: &str = env!("CARGO_PKG_NAME");
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-fn main() -> Result<(), Error>{
+fn main() -> Result<(), Error> {
     env_logger::init();
 
     let args: Vec<String> = env::args().collect();
-    
+
     let file_path = match args.len() {
         1 => None,
         2 => Some(args[1].clone()),

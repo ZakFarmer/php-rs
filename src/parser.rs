@@ -3,7 +3,15 @@ use std::collections::HashMap;
 use anyhow::Error;
 use log::trace;
 
-use crate::{token::{Token, TokenType}, lexer::Lexer, ast::{Program, Statement, VariableAssignment, Identifier, ReturnStatement, Expression, ExpressionStatement, IntegerLiteral, PrefixExpression, InfixExpression, VariableReference}};
+use crate::{
+    ast::{
+        Expression, ExpressionStatement, Identifier, InfixExpression, IntegerLiteral,
+        PrefixExpression, Program, ReturnStatement, Statement, VariableAssignment,
+        VariableReference,
+    },
+    lexer::Lexer,
+    token::{Token, TokenType},
+};
 
 type ParseResult = Option<Box<dyn Expression>>;
 
@@ -55,29 +63,27 @@ impl<'a> Parser<'a> {
     }
 
     fn peek_error(&mut self, token_type: &TokenType) -> () {
-        let message = format!("Expected next token to be {}, got {}", token_type, self.peek_token.as_ref().unwrap());
+        let message = format!(
+            "Expected next token to be {}, got {}",
+            token_type,
+            self.peek_token.as_ref().unwrap()
+        );
 
         self.errors.push(message);
     }
 
     fn current_precedence(&mut self) -> Precedence {
-        *self.precedences
-            .get(
-                &self.current_token
-                    .as_ref()
-                    .unwrap()
-                    .token_type
-            ).unwrap_or(&Precedence::Lowest)
+        *self
+            .precedences
+            .get(&self.current_token.as_ref().unwrap().token_type)
+            .unwrap_or(&Precedence::Lowest)
     }
 
     fn peek_precedence(&mut self) -> Precedence {
-        *self.precedences
-            .get(
-                &self.peek_token
-                    .as_ref()
-                    .unwrap()
-                    .token_type
-            ).unwrap_or(&Precedence::Lowest)
+        *self
+            .precedences
+            .get(&self.peek_token.as_ref().unwrap().token_type)
+            .unwrap_or(&Precedence::Lowest)
     }
 
     pub fn new(lexer: Lexer<'a>) -> Self {
@@ -104,17 +110,35 @@ impl<'a> Parser<'a> {
         parser.register_prefix(TokenType::Int, |p| Parser::parse_integer_literal(p));
         parser.register_prefix(TokenType::Bang, |p| Parser::parse_prefix_expression(p));
         parser.register_prefix(TokenType::Minus, |p| Parser::parse_prefix_expression(p));
-        parser.register_prefix(TokenType::Dollar, |p| Parser::parse_variable_reference_expression(p));
+        parser.register_prefix(TokenType::Dollar, |p| {
+            Parser::parse_variable_reference_expression(p)
+        });
 
-        parser.register_infix(TokenType::Plus, |p, left| Parser::parse_infix_expression(p, left));
-        parser.register_infix(TokenType::Minus, |p, left| Parser::parse_infix_expression(p, left));
-        parser.register_infix(TokenType::Slash, |p, left| Parser::parse_infix_expression(p, left));
-        parser.register_infix(TokenType::Asterisk, |p, left| Parser::parse_infix_expression(p, left));
-        parser.register_infix(TokenType::Eq, |p, left| Parser::parse_infix_expression(p, left));
-        parser.register_infix(TokenType::NotEq, |p, left| Parser::parse_infix_expression(p, left));
-        parser.register_infix(TokenType::Lt, |p, left| Parser::parse_infix_expression(p, left));
-        parser.register_infix(TokenType::Gt, |p, left| Parser::parse_infix_expression(p, left));
-        
+        parser.register_infix(TokenType::Plus, |p, left| {
+            Parser::parse_infix_expression(p, left)
+        });
+        parser.register_infix(TokenType::Minus, |p, left| {
+            Parser::parse_infix_expression(p, left)
+        });
+        parser.register_infix(TokenType::Slash, |p, left| {
+            Parser::parse_infix_expression(p, left)
+        });
+        parser.register_infix(TokenType::Asterisk, |p, left| {
+            Parser::parse_infix_expression(p, left)
+        });
+        parser.register_infix(TokenType::Eq, |p, left| {
+            Parser::parse_infix_expression(p, left)
+        });
+        parser.register_infix(TokenType::NotEq, |p, left| {
+            Parser::parse_infix_expression(p, left)
+        });
+        parser.register_infix(TokenType::Lt, |p, left| {
+            Parser::parse_infix_expression(p, left)
+        });
+        parser.register_infix(TokenType::Gt, |p, left| {
+            Parser::parse_infix_expression(p, left)
+        });
+
         parser.next_token();
         parser.next_token();
 
@@ -148,10 +172,7 @@ impl<'a> Parser<'a> {
     }
 
     fn peek_token_is(&mut self, token_type: &TokenType) -> bool {
-        self.peek_token
-            .as_ref()
-            .unwrap()
-            .token_type == token_type.to_owned()
+        self.peek_token.as_ref().unwrap().token_type == token_type.to_owned()
     }
 
     pub fn parse_program(&mut self) -> Program {
@@ -189,7 +210,7 @@ impl<'a> Parser<'a> {
                 return None;
             }
         } else {
-            self.errors.push(String::from("Expected $, got None"));
+            self.errors.push("Expected $, got None".to_string());
             return None;
         }
 
@@ -200,11 +221,13 @@ impl<'a> Parser<'a> {
             if token.token_type == TokenType::Ident {
                 token.clone()
             } else {
-                self.errors.push(format!("Expected identifier, got {:?}", token));
+                self.errors
+                    .push(format!("Expected identifier, got {:?}", token));
                 return None;
             }
         } else {
-            self.errors.push(String::from("Expected identifier, got None"));
+            self.errors
+                .push("Expected identifier, got None".to_string());
             return None;
         };
 
@@ -226,29 +249,31 @@ impl<'a> Parser<'a> {
                 return None;
             }
         } else {
-            self.errors.push(String::from("Expected $, got None"));
+            self.errors.push("Expected $, got None".to_string());
             return None;
         }
-        
+
         // Move to the variable name.
         self.next_token();
-        
+
         // Ensure the variable name is an identifier.
         let name_token = if let Some(token) = &self.current_token {
             if token.token_type == TokenType::Ident {
                 token.clone()
             } else {
-                self.errors.push(format!("Expected identifier, got {:?}", token));
+                self.errors
+                    .push(format!("Expected identifier, got {:?}", token));
                 return None;
             }
         } else {
-            self.errors.push(String::from("Expected identifier, got None"));
+            self.errors
+                .push("Expected identifier, got None".to_string());
             return None;
         };
-        
+
         // Move to the next token and check if it's an assignment or a reference.
         self.next_token();
-        
+
         match &self.current_token {
             Some(token) if token.token_type == TokenType::Assign => {
                 // Parse as assignment
@@ -256,56 +281,57 @@ impl<'a> Parser<'a> {
                 let value_expression = self.parse_expression(Precedence::Lowest);
 
                 trace!("Expression: {:?}", value_expression);
-    
+
                 if let Some(value_expression) = value_expression {
                     // Ensure the semicolon is present.
                     if !self.expect_peek(TokenType::Semicolon) {
                         return None;
                     }
-    
+
                     let variable_assignment = VariableAssignment {
                         token: name_token.clone(),
                         name: name_token.literal.clone(),
-                        value: value_expression, 
+                        value: value_expression,
                     };
-    
+
                     Some(Box::new(variable_assignment) as Box<dyn Statement>)
                 } else {
                     None
                 }
-            },
+            }
             Some(token) if token.token_type == TokenType::Semicolon => {
                 // Parse as reference
                 let variable_reference = VariableReference {
                     token: name_token.clone(),
                     name: name_token.literal.clone(),
                 };
-    
+
                 Some(Box::new(variable_reference) as Box<dyn Statement>)
-            },
+            }
             Some(token) => {
-                self.errors.push(format!("Expected = or ;, got {:?}", token));
+                self.errors
+                    .push(format!("Expected = or ;, got {:?}", token));
                 None
-            },
+            }
             None => {
-                self.errors.push(String::from("Expected = or ;, got None"));
+                self.errors.push("Expected = or ;, got None".to_string());
                 None
             }
         }
-    } 
+    }
 
     fn parse_expression(&mut self, precedence: Precedence) -> Option<Box<dyn Expression>> {
         // Get prefix parse function (if it exists)
-        let prefix_fn = self.prefix_parse_fns
-            .get(
-                &self.current_token
-                    .as_ref()
-                    .unwrap()
-                    .token_type
-            ).map(|x| *x);
+        let prefix_fn = self
+            .prefix_parse_fns
+            .get(&self.current_token.as_ref().unwrap().token_type)
+            .map(|x| *x);
 
         if prefix_fn.is_none() {
-            self.errors.push(format!("No prefix parse function for {:?}", self.current_token.as_ref().unwrap().token_type));
+            self.errors.push(format!(
+                "No prefix parse function for {:?}",
+                self.current_token.as_ref().unwrap().token_type
+            ));
 
             return None;
         }
@@ -314,13 +340,10 @@ impl<'a> Parser<'a> {
         let mut left = prefix_fn.unwrap()(self);
 
         while !self.peek_token_is(&TokenType::Semicolon) && precedence < self.peek_precedence() {
-            let infix_fn = self.infix_parse_fns
-                .get(
-                    &self.peek_token
-                        .as_ref()
-                        .unwrap()
-                        .token_type
-                ).map(|x| *x);
+            let infix_fn = self
+                .infix_parse_fns
+                .get(&self.peek_token.as_ref().unwrap().token_type)
+                .map(|x| *x);
 
             if infix_fn.is_none() {
                 return left;
@@ -364,7 +387,13 @@ impl<'a> Parser<'a> {
     fn parse_integer_literal(&mut self) -> ParseResult {
         let current_token = self.current_token.clone().unwrap();
 
-        let value = self.current_token.as_ref().unwrap().to_string().parse::<i64>().unwrap();
+        let value = self
+            .current_token
+            .as_ref()
+            .unwrap()
+            .to_string()
+            .parse::<i64>()
+            .unwrap();
 
         Some(Box::new(IntegerLiteral {
             token: current_token,
@@ -382,19 +411,18 @@ impl<'a> Parser<'a> {
         self.next_token();
 
         match self.parse_expression(precedence) {
-            Some(right) => {
-                Some(Box::new(InfixExpression {
-                    token: current_token,
-                    operator,
-                    left,
-                    right,
-                }))
-            },
+            Some(right) => Some(Box::new(InfixExpression {
+                token: current_token,
+                operator,
+                left,
+                right,
+            })),
             None => {
-                self.errors.push("Expected an expression, but found none.".to_string());
+                self.errors
+                    .push("Expected an expression, but found none.".to_string());
                 return None;
             }
-        } 
+        }
     }
 
     fn parse_prefix_expression(&mut self) -> Option<Box<dyn Expression>> {
@@ -417,7 +445,8 @@ impl<'a> Parser<'a> {
         let current_token = self.current_token.clone().unwrap();
 
         if !matches!(current_token.token_type, TokenType::Return) {
-            self.errors.push(format!("Expected 'return', got {:?}", current_token));
+            self.errors
+                .push(format!("Expected 'return', got {:?}", current_token));
             return None;
         }
 
@@ -426,10 +455,10 @@ impl<'a> Parser<'a> {
         while !self.current_token_is(TokenType::Semicolon) {
             self.next_token();
         }
-    
+
         Some(Box::new(ReturnStatement {
             token: current_token,
-            return_value: None  // Placeholder, you might parse expressions here in the future
+            return_value: None, // Placeholder, you might parse expressions here in the future
         }))
     }
 
@@ -440,16 +469,15 @@ impl<'a> Parser<'a> {
     pub fn register_infix(&mut self, token_type: TokenType, function: InfixParseFn) {
         self.infix_parse_fns.insert(token_type, function);
     }
-    
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use anyhow::{Result, Error};
+    use anyhow::{Error, Result};
 
-    use crate::ast::{Statement, VariableAssignment, PrefixExpression, InfixExpression};
+    use crate::ast::{InfixExpression, PrefixExpression, Statement, VariableAssignment};
 
     #[test]
     fn test_assignment_statements() -> Result<(), Error> {
@@ -467,11 +495,7 @@ mod tests {
 
         assert_eq!(3, program.statements.len());
 
-        let expected_identifiers = [
-            "x",
-            "y",
-            "foobar"
-        ];
+        let expected_identifiers = ["x", "y", "foobar"];
 
         for i in 0..expected_identifiers.len() {
             let statement = &program.statements[i];
@@ -508,20 +532,29 @@ mod tests {
     #[test]
     fn test_integer_literal_expression() -> Result<(), Error> {
         let input = "5;";
-    
+
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
-    
+
         let program = parser.parse_program();
         parser.check_errors()?;
-    
+
         assert_eq!(1, program.statements.len());
-    
-        let statement = program.statements[0].as_any().downcast_ref::<ExpressionStatement>().unwrap();
-        let integer_literal = statement.expression.as_ref().unwrap().as_any().downcast_ref::<IntegerLiteral>().unwrap();
-    
+
+        let statement = program.statements[0]
+            .as_any()
+            .downcast_ref::<ExpressionStatement>()
+            .unwrap();
+        let integer_literal = statement
+            .expression
+            .as_ref()
+            .unwrap()
+            .as_any()
+            .downcast_ref::<IntegerLiteral>()
+            .unwrap();
+
         assert_eq!(5, integer_literal.value);
-    
+
         Ok(())
     }
 
@@ -539,20 +572,23 @@ mod tests {
             ("3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"),
             ("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"),
             ("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"),
-            ("3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"),
+            (
+                "3 + 4 * 5 == 3 * 1 + 4 * 5",
+                "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+            ),
         ];
 
         for (input, expected) in tests.iter() {
             let lexer = Lexer::new(input);
             let mut parser = Parser::new(lexer);
-    
+
             let program = parser.parse_program();
             parser.check_errors()?;
 
             for statement in &program.statements {
                 println!("{}", statement);
             }
-    
+
             assert_eq!(*expected, program.to_string());
         }
 
@@ -575,15 +611,24 @@ mod tests {
         for (input, left_value, operator, right_value) in infix_tests.iter() {
             let lexer = Lexer::new(input);
             let mut parser = Parser::new(lexer);
-    
+
             let program = parser.parse_program();
             parser.check_errors()?;
-    
+
             assert_eq!(1, program.statements.len());
-    
-            let statement = program.statements[0].as_any().downcast_ref::<ExpressionStatement>().unwrap();
-            let expression = statement.expression.as_ref().unwrap().as_any().downcast_ref::<InfixExpression>().unwrap();
-    
+
+            let statement = program.statements[0]
+                .as_any()
+                .downcast_ref::<ExpressionStatement>()
+                .unwrap();
+            let expression = statement
+                .expression
+                .as_ref()
+                .unwrap()
+                .as_any()
+                .downcast_ref::<InfixExpression>()
+                .unwrap();
+
             assert_integer_literal(&expression.left, *left_value)?;
             assert_eq!(*operator, expression.operator);
             assert_integer_literal(&expression.right, *right_value)?;
@@ -594,26 +639,32 @@ mod tests {
 
     #[test]
     fn test_parsing_prefix_expressions() -> Result<(), Error> {
-        let prefix_tests: [(&str, &str, i64); 2] = [
-            ("!5;", "!", 5),
-            ("-15;", "-", 15),
-        ];
-    
-        for (input, operator, value) in prefix_tests.iter() {
+        let prefix_tests: [(&str, &str, i64); 2] = [("!5;", "!", 5), ("-15;", "-", 15)];
+
+        for (input, _operator, value) in prefix_tests.iter() {
             let lexer = Lexer::new(input);
             let mut parser = Parser::new(lexer);
-    
+
             let program = parser.parse_program();
             parser.check_errors()?;
-    
+
             assert_eq!(1, program.statements.len());
-    
-            let statement = program.statements[0].as_any().downcast_ref::<ExpressionStatement>().unwrap();
-            let expression = statement.expression.as_ref().unwrap().as_any().downcast_ref::<PrefixExpression>().unwrap();
-    
+
+            let statement = program.statements[0]
+                .as_any()
+                .downcast_ref::<ExpressionStatement>()
+                .unwrap();
+            let expression = statement
+                .expression
+                .as_ref()
+                .unwrap()
+                .as_any()
+                .downcast_ref::<PrefixExpression>()
+                .unwrap();
+
             assert_integer_literal(&expression.right, *value)?;
         }
-    
+
         Ok(())
     }
 
@@ -621,7 +672,7 @@ mod tests {
         let _let_statement = statement.as_any().downcast_ref::<VariableAssignment>();
 
         assert!(_let_statement.is_some());
-        
+
         let let_statement = _let_statement.unwrap();
 
         assert_eq!(name, let_statement.name);

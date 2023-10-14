@@ -1,7 +1,5 @@
-use std::{io::{self, Write}, any::{TypeId, Any}};
+use anyhow::{Error, Result};
 
-use anyhow::{Result, Error};
-use log::{info};
 use rustyline::error::ReadlineError;
 
 use crate::{lexer::Lexer, parser::Parser};
@@ -16,7 +14,11 @@ pub fn init_repl() -> Result<(), Error> {
         info!("No previous history.");
     }
 
-    println!("{} interpreter v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+    println!(
+        "{} interpreter v{}",
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_PKG_VERSION")
+    );
 
     loop {
         let readline = rl.readline(format!("{}", PROMPT).as_str());
@@ -34,15 +36,15 @@ pub fn init_repl() -> Result<(), Error> {
                 for statement in program.statements {
                     println!("{}", &statement);
                 }
-            },
+            }
             Err(ReadlineError::Interrupted) => {
                 println!("CTRL-C");
                 break;
-            },
+            }
             Err(ReadlineError::Eof) => {
                 println!("CTRL-D");
                 break;
-            },
+            }
             Err(err) => {
                 println!("Error: {:?}", err);
                 break;

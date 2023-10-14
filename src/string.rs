@@ -1,4 +1,4 @@
-use std::ops::{RangeBounds, Bound};
+use std::ops::{Bound, RangeBounds};
 
 trait StringUtils {
     fn substring(&self, start: usize, len: usize) -> &str;
@@ -11,26 +11,32 @@ impl StringUtils for str {
         let mut byte_start = 0;
         let mut it = self.chars();
         loop {
-            if char_pos == start { break; }
+            if char_pos == start {
+                break;
+            }
             if let Some(c) = it.next() {
                 char_pos += 1;
                 byte_start += c.len_utf8();
+            } else {
+                break;
             }
-            else { break; }
         }
         char_pos = 0;
         let mut byte_end = byte_start;
         loop {
-            if char_pos == len { break; }
+            if char_pos == len {
+                break;
+            }
             if let Some(c) = it.next() {
                 char_pos += 1;
                 byte_end += c.len_utf8();
+            } else {
+                break;
             }
-            else { break; }
         }
         &self[byte_start..byte_end]
     }
-    
+
     fn slice(&self, range: impl RangeBounds<usize>) -> &str {
         let start = match range.start_bound() {
             Bound::Included(bound) | Bound::Excluded(bound) => *bound,
