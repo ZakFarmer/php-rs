@@ -7,7 +7,7 @@ use crate::{
     ast::{
         Expression, ExpressionStatement, Identifier, InfixExpression, IntegerLiteral,
         PrefixExpression, Program, ReturnStatement, Statement, VariableAssignment,
-        VariableReference,
+        VariableReference, Boolean,
     },
     lexer::Lexer,
     token::{Token, TokenType},
@@ -107,6 +107,8 @@ impl<'a> Parser<'a> {
         };
 
         parser.register_prefix(TokenType::Ident, |p| Parser::parse_identifier(p));
+        parser.register_prefix(TokenType::True, |p| Parser::parse_boolean(p));
+        parser.register_prefix(TokenType::False, |p| Parser::parse_boolean(p));
         parser.register_prefix(TokenType::Int, |p| Parser::parse_integer_literal(p));
         parser.register_prefix(TokenType::Bang, |p| Parser::parse_prefix_expression(p));
         parser.register_prefix(TokenType::Minus, |p| Parser::parse_prefix_expression(p));
@@ -175,6 +177,27 @@ impl<'a> Parser<'a> {
         self.peek_token.as_ref().unwrap().token_type == token_type.to_owned()
     }
 
+    fn parse_boolean(&mut self) -> Option<Box<dyn Expression>> {
+        let current_token = self.current_token.clone().unwrap();
+
+        let value = match self.current_token.as_ref().unwrap().token_type {
+            TokenType::True => true,
+            TokenType::False => false,
+            _ => {
+                self.errors.push(format!(
+                    "Expected true or false, got {:?}",
+                    self.current_token.as_ref().unwrap().token_type
+                ));
+                return None;
+            }
+        };
+
+        Some(Box::new(Boolean {
+            token: current_token,
+            value,
+        }))
+    }
+
     pub fn parse_program(&mut self) -> Program {
         let mut program = Program::default();
 
@@ -232,12 +255,12 @@ impl<'a> Parser<'a> {
         };
 
         // Parse as reference
-        let variable_reference = VariableReference {
+        let identifier = Identifier {
             token: name_token.clone(),
-            name: name_token.literal.clone(),
+            value: name_token.literal.clone(),
         };
 
-        Some(Box::new(variable_reference) as Box<dyn Expression>)
+        Some(Box::new(identifier) as Box<dyn Expression>)
     }
 
     fn parse_variable_or_assignment(&mut self) -> Option<Box<dyn Statement>> {
@@ -507,6 +530,56 @@ mod tests {
     }
 
     #[test]
+    fn test_boolean_expression() -> Result<(), Error> {
+        let input = "
+            true;
+            false;
+
+            $x = true;
+            $y = false;
+        ";
+
+        let expected_values = [true, false, true, false];
+
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+
+        let program = parser.parse_program();
+        parser.check_errors()?;
+
+        assert_eq!(4, program.statements.len());
+
+        for i in 0..expected_values.len() {
+            let statement = &program.statements[i];
+
+            if let Some(statement) = statement.as_any().downcast_ref::<ExpressionStatement>() {
+                let boolean = statement
+                    .expression
+                    .as_ref()
+                    .unwrap()
+                    .as_any()
+                    .downcast_ref::<Boolean>()
+                    .unwrap();
+
+                assert_eq!(expected_values[i], boolean.value);
+            } else if let Some(statement) = statement.as_any().downcast_ref::<VariableAssignment>() {
+                let boolean = statement
+                    .value
+                    .as_ref()
+                    .as_any()
+                    .downcast_ref::<Boolean>()
+                    .unwrap();
+
+                assert_eq!(expected_values[i], boolean.value);
+            } else {
+                assert!(false, "Expected ExpressionStatement or VariableAssignment");
+            }
+        }
+
+        Ok(())
+    }
+
+    #[test]
     fn test_return_statements() -> Result<(), Error> {
         let input = "
             return 5;
@@ -668,6 +741,18 @@ mod tests {
         Ok(())
     }
 
+    fn assert_boolean_literal(expression: &Box<dyn Expression>, value: bool) -> Result<(), Error> {
+        let boolean = expression.as_any().downcast_ref::<Boolean>();
+
+        assert!(boolean.is_some());
+
+        let boolean = boolean.unwrap();
+
+        assert_eq!(value, boolean.value);
+
+        Ok(())
+    }
+
     fn assert_let_statement(statement: &Box<dyn Statement>, name: &str) -> Result<(), Error> {
         let _let_statement = statement.as_any().downcast_ref::<VariableAssignment>();
 
@@ -676,6 +761,18 @@ mod tests {
         let let_statement = _let_statement.unwrap();
 
         assert_eq!(name, let_statement.name);
+
+        Ok(())
+    }
+
+    fn assert_identifier(expression: &Box<dyn Expression>, value: &str) -> Result<(), Error> {
+        let identifier = expression.as_any().downcast_ref::<Identifier>();
+
+        assert!(identifier.is_some());
+
+        let identifier = identifier.unwrap();
+
+        assert_eq!(value, identifier.value);
 
         Ok(())
     }
@@ -690,5 +787,22 @@ mod tests {
         assert_eq!(value, integer_literal.value);
 
         Ok(())
+    }
+
+    fn assert_literal_expression(
+        expression: &Box<dyn Expression>,
+        expected: &str,
+    ) -> Result<bool, Error> {
+        if let Some(integer_literal) = expression.as_any().downcast_ref::<IntegerLiteral>() {
+            assert_eq!(expected, integer_literal.value.to_string());
+            Ok(true)
+        } else if let Some(identifier) = expression.as_any().downcast_ref::<Identifier>() {
+            assert_eq!(expected, identifier.value);
+            Ok(true)
+        }
+        else {
+
+            Ok(false)
+        }
     }
 }

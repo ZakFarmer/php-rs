@@ -118,6 +118,31 @@ impl Expression for Identifier {
     fn expression_node(&self) {}
 }
 
+pub struct Boolean {
+    pub token: Token,
+    pub value: bool,
+}
+
+impl std::fmt::Debug for Boolean {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", if self.value { "true" } else { "false" })
+    }
+}
+
+impl Node for Boolean {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn token_literal(&self) -> &str {
+        &self.token.literal
+    }
+}
+
+impl Expression for Boolean {
+    fn expression_node(&self) {}
+}
+
 pub struct IntegerLiteral {
     pub token: Token,
     pub value: i64,

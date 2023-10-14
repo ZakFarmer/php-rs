@@ -5,7 +5,8 @@ pub enum TokenType {
 
     Ident,
     Int,
-    Bool,
+    False,
+    True,
 
     Eq,
     NotEq,
@@ -42,7 +43,8 @@ impl TokenType {
     pub fn lookup_ident(ident: &str) -> TokenType {
         match ident {
             "function" => TokenType::Function,
-            "true" | "false" => TokenType::Bool,
+            "true" => TokenType::True,
+            "false" => TokenType::False,
             "if" => TokenType::If,
             "else" => TokenType::Else,
             "return" => TokenType::Return,
@@ -64,7 +66,8 @@ impl std::fmt::Display for TokenType {
             TokenType::Eof => "Eof",
             TokenType::Ident => "Ident",
             TokenType::Int => "Int",
-            TokenType::Bool => "Bool",
+            TokenType::True => "True",
+            TokenType::False => "False",
             TokenType::Eq => "Eq",
             TokenType::NotEq => "NotEq",
             TokenType::Assign => "Assign",
