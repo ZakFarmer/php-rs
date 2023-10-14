@@ -33,7 +33,15 @@ pub trait Expression: Node {
 
 impl std::fmt::Debug for dyn Expression {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.token_literal())
+        if self.as_any().type_id() == std::any::TypeId::of::<InfixExpression>() {
+            let infix_expression = self.as_any().downcast_ref::<InfixExpression>().unwrap();
+            write!(f, "({:?} {} {:?})", infix_expression.left, infix_expression.operator, infix_expression.right)
+        } else if self.as_any().type_id() == std::any::TypeId::of::<PrefixExpression>() {
+            let prefix_expression = self.as_any().downcast_ref::<PrefixExpression>().unwrap();
+            write!(f, "({}{:?})", prefix_expression.operator, prefix_expression.right)
+        } else {
+            write!(f, "{}", self.token_literal())
+        }
     }
 }
 
@@ -98,7 +106,7 @@ impl std::fmt::Debug for InfixExpression {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         println!("left: {:?}", self.left);
         println!("right: {:?}", self.right);
-        
+
         write!(f, "({:?} {} {:?})", self.left, self.operator, self.right)
     }
 }

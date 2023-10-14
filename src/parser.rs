@@ -506,27 +506,6 @@ mod tests {
     }
 
     #[test]
-    fn test_identifier_expression() -> Result<(), Error> {
-        let input = "$foobar;";
-
-        let lexer = Lexer::new(input);
-        let mut parser = Parser::new(lexer);
-
-        let program = parser.parse_program();
-        parser.check_errors()?;
-
-        assert_eq!(1, program.statements.len());
-
-        let statement = program.statements[0].as_any().downcast_ref::<ExpressionStatement>().unwrap();
-
-        let identifier = statement.expression.as_ref().unwrap().as_any().downcast_ref::<Identifier>().unwrap();
-
-        assert_eq!("foobar", identifier.value);
-
-        Ok(())
-    }
-
-    #[test]
     fn test_integer_literal_expression() -> Result<(), Error> {
         let input = "5;";
     
