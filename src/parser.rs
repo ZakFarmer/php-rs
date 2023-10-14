@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
 use anyhow::Error;
+use log::trace;
 
-use crate::{token::{Token, TokenType}, lexer::Lexer, ast::{Program, Statement, LetStatement, Identifier, ReturnStatement, Expression, ExpressionStatement, IntegerLiteral, PrefixExpression, InfixExpression}};
+use crate::{token::{Token, TokenType}, lexer::Lexer, ast::{Program, Statement, VariableAssignment, Identifier, ReturnStatement, Expression, ExpressionStatement, IntegerLiteral, PrefixExpression, InfixExpression, VariableReference}};
 
 type ParseResult = Option<Box<dyn Expression>>;
 
@@ -103,6 +104,7 @@ impl<'a> Parser<'a> {
         parser.register_prefix(TokenType::Int, |p| Parser::parse_integer_literal(p));
         parser.register_prefix(TokenType::Bang, |p| Parser::parse_prefix_expression(p));
         parser.register_prefix(TokenType::Minus, |p| Parser::parse_prefix_expression(p));
+        parser.register_prefix(TokenType::Dollar, |p| Parser::parse_variable_reference_expression(p));
 
         parser.register_infix(TokenType::Plus, |p, left| Parser::parse_infix_expression(p, left));
         parser.register_infix(TokenType::Minus, |p, left| Parser::parse_infix_expression(p, left));
@@ -172,7 +174,7 @@ impl<'a> Parser<'a> {
         if let Some(token) = &self.current_token {
             match token.token_type {
                 TokenType::Return => self.parse_return_statement(),
-                TokenType::Dollar => self.parse_variable_assignment(),
+                TokenType::Dollar => self.parse_variable_or_assignment(),
                 _ => self.parse_expression_statement(),
             }
         } else {
@@ -180,8 +182,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_variable_assignment(&mut self) -> Option<Box<dyn Statement>> {
-        // Ensure the current token is a Dollar sign.
+    fn parse_variable_reference_expression(&mut self) -> Option<Box<dyn Expression>> {
         if let Some(token) = &self.current_token {
             if token.token_type != TokenType::Dollar {
                 self.errors.push(format!("Expected $, got {:?}", token));
@@ -191,10 +192,9 @@ impl<'a> Parser<'a> {
             self.errors.push(String::from("Expected $, got None"));
             return None;
         }
-    
-        // Move to the variable name.
+
         self.next_token();
-    
+
         // Ensure the variable name is an identifier.
         let name_token = if let Some(token) = &self.current_token {
             if token.token_type == TokenType::Ident {
@@ -207,39 +207,90 @@ impl<'a> Parser<'a> {
             self.errors.push(String::from("Expected identifier, got None"));
             return None;
         };
-    
-        // Move to the expression after the equals sign.
-        self.next_token();
-        
+
+        // Parse as reference
+        let variable_reference = VariableReference {
+            token: name_token.clone(),
+            name: name_token.literal.clone(),
+        };
+
+        Some(Box::new(variable_reference) as Box<dyn Expression>)
+    }
+
+    fn parse_variable_or_assignment(&mut self) -> Option<Box<dyn Statement>> {
+        trace!("Current token: {:?}", self.current_token);
+        // Ensure the current token is a Dollar sign.
         if let Some(token) = &self.current_token {
-            if token.token_type != TokenType::Assign {
-                self.errors.push(format!("Expected =, got {:?}", token));
+            if token.token_type != TokenType::Dollar {
+                self.errors.push(format!("Expected $, got {:?}", token));
                 return None;
             }
         } else {
-            self.errors.push(String::from("Expected =, got None"));
+            self.errors.push(String::from("Expected $, got None"));
             return None;
         }
-
+        
+        // Move to the variable name.
         self.next_token();
-    
-        let value_expression = self.parse_expression(Precedence::Lowest);
-
-        if let Some(value_expression) = value_expression {
-            // Ensure the semicolon is present.
-            if !self.expect_peek(TokenType::Semicolon) {
+        
+        // Ensure the variable name is an identifier.
+        let name_token = if let Some(token) = &self.current_token {
+            if token.token_type == TokenType::Ident {
+                token.clone()
+            } else {
+                self.errors.push(format!("Expected identifier, got {:?}", token));
                 return None;
             }
-
-            let variable_assignment = LetStatement {
-                token: name_token.clone(),
-                name: name_token.literal.clone(),
-                value: value_expression, 
-            };
-
-            Some(Box::new(variable_assignment) as Box<dyn Statement>)
         } else {
-            None
+            self.errors.push(String::from("Expected identifier, got None"));
+            return None;
+        };
+        
+        // Move to the next token and check if it's an assignment or a reference.
+        self.next_token();
+        
+        match &self.current_token {
+            Some(token) if token.token_type == TokenType::Assign => {
+                // Parse as assignment
+                self.next_token();
+                let value_expression = self.parse_expression(Precedence::Lowest);
+
+                trace!("Expression: {:?}", value_expression);
+    
+                if let Some(value_expression) = value_expression {
+                    // Ensure the semicolon is present.
+                    if !self.expect_peek(TokenType::Semicolon) {
+                        return None;
+                    }
+    
+                    let variable_assignment = VariableAssignment {
+                        token: name_token.clone(),
+                        name: name_token.literal.clone(),
+                        value: value_expression, 
+                    };
+    
+                    Some(Box::new(variable_assignment) as Box<dyn Statement>)
+                } else {
+                    None
+                }
+            },
+            Some(token) if token.token_type == TokenType::Semicolon => {
+                // Parse as reference
+                let variable_reference = VariableReference {
+                    token: name_token.clone(),
+                    name: name_token.literal.clone(),
+                };
+    
+                Some(Box::new(variable_reference) as Box<dyn Statement>)
+            },
+            Some(token) => {
+                self.errors.push(format!("Expected = or ;, got {:?}", token));
+                None
+            },
+            None => {
+                self.errors.push(String::from("Expected = or ;, got None"));
+                None
+            }
         }
     } 
 
@@ -330,19 +381,23 @@ impl<'a> Parser<'a> {
 
         self.next_token();
 
-        let right = self.parse_expression(precedence).unwrap();
-
-        Some(Box::new(InfixExpression {
-            token: current_token,
-            operator,
-            left,
-            right,
-        }))
+        match self.parse_expression(precedence) {
+            Some(right) => {
+                Some(Box::new(InfixExpression {
+                    token: current_token,
+                    operator,
+                    left,
+                    right,
+                }))
+            },
+            None => {
+                self.errors.push("Expected an expression, but found none.".to_string());
+                return None;
+            }
+        } 
     }
 
     fn parse_prefix_expression(&mut self) -> Option<Box<dyn Expression>> {
-        println!("Parsing prefix expression");
-
         let current_token = self.current_token.clone().unwrap();
 
         let operator = self.current_token.as_ref().unwrap().to_string();
@@ -394,7 +449,7 @@ mod tests {
 
     use anyhow::{Result, Error};
 
-    use crate::ast::{Statement, LetStatement, PrefixExpression, InfixExpression};
+    use crate::ast::{Statement, VariableAssignment, PrefixExpression, InfixExpression};
 
     #[test]
     fn test_assignment_statements() -> Result<(), Error> {
@@ -453,19 +508,21 @@ mod tests {
     #[test]
     fn test_identifier_expression() -> Result<(), Error> {
         let input = "$foobar;";
-    
+
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
-    
+
         let program = parser.parse_program();
         parser.check_errors()?;
-    
+
         assert_eq!(1, program.statements.len());
-    
-        let statement = program.statements[0].as_any().downcast_ref::<LetStatement>().unwrap();
-    
-        assert_eq!("foobar", statement.name);
-    
+
+        let statement = program.statements[0].as_any().downcast_ref::<ExpressionStatement>().unwrap();
+
+        let identifier = statement.expression.as_ref().unwrap().as_any().downcast_ref::<Identifier>().unwrap();
+
+        assert_eq!("foobar", identifier.value);
+
         Ok(())
     }
 
@@ -578,9 +635,7 @@ mod tests {
     }
 
     fn assert_let_statement(statement: &Box<dyn Statement>, name: &str) -> Result<(), Error> {
-        assert_eq!("$", statement.token_literal());
-
-        let _let_statement = statement.as_any().downcast_ref::<LetStatement>();
+        let _let_statement = statement.as_any().downcast_ref::<VariableAssignment>();
 
         assert!(_let_statement.is_some());
         

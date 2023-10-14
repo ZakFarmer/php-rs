@@ -31,7 +31,7 @@ pub trait Expression: Node {
     fn expression_node(&self);
 }
 
-impl std::fmt::Display for dyn Expression {
+impl std::fmt::Debug for dyn Expression {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", self.token_literal())
     }
@@ -94,9 +94,12 @@ pub struct InfixExpression {
     pub right: Box<dyn Expression>,
 }
 
-impl std::fmt::Display for InfixExpression {
+impl std::fmt::Debug for InfixExpression {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "({} {} {})", self.left, self.operator, self.right)
+        println!("left: {:?}", self.left);
+        println!("right: {:?}", self.right);
+        
+        write!(f, "({:?} {} {:?})", self.left, self.operator, self.right)
     }
 }
 
@@ -120,9 +123,9 @@ pub struct PrefixExpression {
     pub right: Box<dyn Expression>,
 }
 
-impl std::fmt::Display for PrefixExpression {
+impl std::fmt::Debug for PrefixExpression {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "({}{})", self.operator, self.right)
+        write!(f, "({}{:?})", self.operator, self.right)
     }
 }
 
@@ -159,10 +162,10 @@ impl Statement for ExpressionStatement {
     fn statement_node(&self) {}
 }
 
-impl std::fmt::Display for ExpressionStatement {
+impl std::fmt::Debug for ExpressionStatement {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match &self.expression {
-            Some(expr) => write!(f, "{}", expr),
+            Some(expr) => write!(f, "{:?}", expr),
             None => Ok(())
         }
     }
@@ -193,19 +196,19 @@ impl Statement for ReturnStatement {
     fn statement_node(&self) {}
 }
 
-pub struct LetStatement {
+pub struct VariableAssignment {
     pub token: Token,
     pub name: String,
     pub value: Box<dyn Expression>,
 }
 
-impl std::fmt::Debug for LetStatement {
+impl std::fmt::Debug for VariableAssignment {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} = {};", self.name, self.value.to_string())
+        write!(f, "${} = {:?};", self.name, self.value)
     }
 }
 
-impl Node for LetStatement {
+impl Node for VariableAssignment {
     fn as_any(&self) -> &dyn Any {
         self
     }
@@ -215,7 +218,36 @@ impl Node for LetStatement {
     }
 }
 
-impl Statement for LetStatement {
+impl Statement for VariableAssignment {
+    fn statement_node(&self) {}
+}
+
+pub struct VariableReference {
+    pub token: Token,
+    pub name: String,
+}
+
+impl std::fmt::Debug for VariableReference {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "${}", self.name.to_string())
+    }
+}
+
+impl Node for VariableReference {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn token_literal(&self) -> &str {
+        &self.token.literal
+    }
+}
+
+impl Expression for VariableReference {
+    fn expression_node(&self) {}
+}
+
+impl Statement for VariableReference {
     fn statement_node(&self) {}
 }
 
@@ -224,6 +256,18 @@ pub struct Program {
 }
 
 impl std::fmt::Display for Program {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let mut output = String::new();
+
+        for statement in &self.statements {
+            output.push_str(&format!("{}", statement));
+        }
+
+        write!(f, "{}", output)
+    }
+}
+
+impl std::fmt::Debug for Program {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let mut output = String::new();
 
