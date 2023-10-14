@@ -168,6 +168,44 @@ impl Expression for IntegerLiteral {
     fn expression_node(&self) {}
 }
 
+pub struct IfExpression {
+    pub token: Token,
+    pub condition: Box<dyn Expression>,
+    pub consequence: Box<dyn Statement>,
+    pub alternative: Option<Box<dyn Statement>>,
+}
+
+impl std::fmt::Debug for IfExpression {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let mut output = String::new();
+
+        output.push_str(&format!(
+            "if {:?} {:?}",
+            self.condition, self.consequence
+        ));
+
+        if let Some(alternative) = &self.alternative {
+            output.push_str(&format!(" else {:?}", alternative));
+        }
+
+        write!(f, "{}", output)
+    }
+}
+
+impl Node for IfExpression {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn token_literal(&self) -> &str {
+        &self.token.literal
+    }
+}
+
+impl Expression for IfExpression {
+    fn expression_node(&self) {}
+}
+
 pub struct InfixExpression {
     pub token: Token,
     pub left: Box<dyn Expression>,
@@ -222,6 +260,37 @@ impl Node for PrefixExpression {
 
 impl Expression for PrefixExpression {
     fn expression_node(&self) {}
+}
+
+pub struct BlockStatement {
+    pub token: Token,
+    pub statements: Vec<Box<dyn Statement>>,
+}
+
+impl std::fmt::Debug for BlockStatement {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let mut output = String::new();
+
+        for statement in &self.statements {
+            output.push_str(&format!("{}", statement));
+        }
+
+        write!(f, "{}", output)
+    }
+}
+
+impl Node for BlockStatement {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn token_literal(&self) -> &str {
+        &self.token.literal
+    }
+}
+
+impl Statement for BlockStatement {
+    fn statement_node(&self) {}
 }
 
 pub struct ExpressionStatement {

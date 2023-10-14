@@ -7,7 +7,7 @@ use crate::{
     ast::{
         Expression, ExpressionStatement, Identifier, InfixExpression, IntegerLiteral,
         PrefixExpression, Program, ReturnStatement, Statement, VariableAssignment,
-        VariableReference, Boolean,
+        VariableReference, Boolean, IfExpression, BlockStatement,
     },
     lexer::Lexer,
     token::{Token, TokenType},
@@ -110,9 +110,10 @@ impl<'a> Parser<'a> {
         parser.register_prefix(TokenType::True, |p| Parser::parse_boolean(p));
         parser.register_prefix(TokenType::False, |p| Parser::parse_boolean(p));
         parser.register_prefix(TokenType::Int, |p| Parser::parse_integer_literal(p));
+        parser.register_prefix(TokenType::LParen, |p| Parser::parse_grouped_expression(p));
+        parser.register_prefix(TokenType::If, |p| Parser::parse_if_expression(p));
         parser.register_prefix(TokenType::Bang, |p| Parser::parse_prefix_expression(p));
         parser.register_prefix(TokenType::Minus, |p| Parser::parse_prefix_expression(p));
-        parser.register_prefix(TokenType::LParen, |p| Parser::parse_grouped_expression(p));
         parser.register_prefix(TokenType::Dollar, |p| Parser::parse_variable_reference_expression(p));
 
         parser.register_infix(TokenType::Plus, |p, left| {
@@ -395,6 +396,31 @@ impl<'a> Parser<'a> {
         }))
     }
 
+    fn parse_block_statement(&mut self) -> Box<dyn Statement> {
+        let current_token = self.current_token.clone().unwrap();
+
+        let mut statements = vec![];
+
+        self.next_token();
+
+        while !self.current_token_is(TokenType::RBrace)
+            && !self.current_token_is(TokenType::Eof)
+        {
+            let statement = self.parse_statement();
+
+            if let Some(statement) = statement {
+                statements.push(statement);
+            }
+
+            self.next_token();
+        }
+
+        Box::new(BlockStatement {
+            token: current_token,
+            statements,
+        })
+    }
+
     fn parse_grouped_expression(&mut self) -> Option<Box<dyn Expression>> {
         self.next_token();
 
@@ -432,6 +458,51 @@ impl<'a> Parser<'a> {
         Some(Box::new(IntegerLiteral {
             token: current_token,
             value,
+        }))
+    }
+
+    fn parse_if_expression(&mut self) -> Option<Box<dyn Expression>> {
+        let current_token = self.current_token.clone().unwrap();
+
+        if !self.expect_peek(TokenType::LParen) {
+            return None;
+        }
+
+        self.next_token();
+
+        let condition = self.parse_expression(Precedence::Lowest);
+
+        if let None = condition {
+            return None;
+        }
+
+        if !self.expect_peek(TokenType::RParen) {
+            return None;
+        }
+
+        if !self.expect_peek(TokenType::LBrace) {
+            return None;
+        }
+
+        let consequence = self.parse_block_statement();
+
+        let alternative = if self.peek_token_is(&TokenType::Else) {
+            self.next_token();
+
+            if !self.expect_peek(TokenType::LBrace) {
+                return None;
+            }
+
+            Some(self.parse_block_statement())
+        } else {
+            None
+        };
+
+        Some(Box::new(IfExpression {
+            token: current_token,
+            condition: condition.unwrap(),
+            consequence,
+            alternative,
         }))
     }
 
@@ -511,7 +582,7 @@ mod tests {
 
     use anyhow::{Error, Result};
 
-    use crate::ast::{InfixExpression, PrefixExpression, Statement, VariableAssignment};
+    use crate::ast::{InfixExpression, PrefixExpression, Statement, VariableAssignment, IfExpression};
 
     #[test]
     fn test_assignment_statements() -> Result<(), Error> {
@@ -586,6 +657,82 @@ mod tests {
                 assert!(false, "Expected ExpressionStatement or VariableAssignment");
             }
         }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_if_expression() -> Result<(), Error> {
+        let input = "
+            if ($x < $y) { return $x; }
+        ";
+
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+
+        let program = parser.parse_program();
+
+        parser.check_errors()?;
+
+        assert_eq!(1, program.statements.len());
+
+        let statement = program.statements[0]
+            .as_any()
+            .downcast_ref::<ExpressionStatement>()
+            .unwrap();
+
+        let if_expression = statement
+            .expression
+            .as_ref()
+            .unwrap()
+            .as_any()
+            .downcast_ref::<IfExpression>()
+            .unwrap();
+
+        assert_infix_expression(
+            &if_expression.condition,
+            "x",
+            "<",
+            "y",
+        )?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_if_else_expression() -> Result<(), Error> {
+        let input = "
+            if ($x < $y) { return $x; } else { return $y; }
+        ";
+
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+
+        let program = parser.parse_program();
+
+        parser.check_errors()?;
+
+        assert_eq!(1, program.statements.len());
+
+        let statement = program.statements[0]
+            .as_any()
+            .downcast_ref::<ExpressionStatement>()
+            .unwrap();
+
+        let if_expression = statement
+            .expression
+            .as_ref()
+            .unwrap()
+            .as_any()
+            .downcast_ref::<IfExpression>()
+            .unwrap();
+
+        assert_infix_expression(
+            &if_expression.condition,
+            "x",
+            "<",
+            "y",
+        )?;
 
         Ok(())
     }
@@ -805,6 +952,25 @@ mod tests {
         let integer_literal = integer_literal.unwrap();
 
         assert_eq!(value, integer_literal.value);
+
+        Ok(())
+    }
+
+    fn assert_infix_expression(
+        expression: &Box<dyn Expression>,
+        left_value: &str,
+        operator: &str,
+        right_value: &str,
+    ) -> Result<(), Error> {
+        let infix_expression = expression.as_any().downcast_ref::<InfixExpression>();
+
+        assert!(infix_expression.is_some());
+
+        let infix_expression = infix_expression.unwrap();
+
+        assert_literal_expression(&infix_expression.left, left_value)?;
+        assert_eq!(operator, infix_expression.operator);
+        assert_literal_expression(&infix_expression.right, right_value)?;
 
         Ok(())
     }
