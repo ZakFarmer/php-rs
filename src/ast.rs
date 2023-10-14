@@ -1,4 +1,4 @@
-use std::any::Any;
+use std::{any::Any, fmt::Debug};
 
 use crate::token::Token;
 
@@ -15,6 +15,16 @@ impl std::fmt::Display for dyn Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", self.token_literal())
     }
+}
+
+impl Debug for dyn Statement {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Statement: {}", self.token_literal())
+    }
+}
+
+impl Expression for dyn Statement {
+    fn expression_node(&self) {}
 }
 
 pub trait Expression: Node {
@@ -158,32 +168,6 @@ impl std::fmt::Display for ExpressionStatement {
     }
 }
 
-pub struct LetStatement {
-    pub token: Token,
-    pub name: Identifier,
-    pub value: Option<Box<dyn Expression>>,
-}
-
-impl std::fmt::Display for LetStatement {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{} {};", self.token_literal(), self.name)
-    }
-}
-
-impl Node for LetStatement {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-
-    fn token_literal(&self) -> &str {
-        &self.token.literal
-    }
-}
-
-impl Statement for LetStatement {
-    fn statement_node(&self) {}
-}
-
 pub struct ReturnStatement {
     pub token: Token,
     pub return_value: Option<Box<dyn Expression>>
@@ -209,6 +193,32 @@ impl Statement for ReturnStatement {
     fn statement_node(&self) {}
 }
 
+pub struct LetStatement {
+    pub token: Token,
+    pub name: String,
+    pub value: Box<dyn Expression>,
+}
+
+impl std::fmt::Debug for LetStatement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} = {};", self.name, self.value.to_string())
+    }
+}
+
+impl Node for LetStatement {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn token_literal(&self) -> &str {
+        &self.token.literal
+    }
+}
+
+impl Statement for LetStatement {
+    fn statement_node(&self) {}
+}
+
 pub struct Program {
     pub statements: Vec<Box<dyn Statement>>,
 }
@@ -218,6 +228,7 @@ impl std::fmt::Display for Program {
         let mut output = String::new();
 
         for statement in &self.statements {
+            println!("statement: {}", statement);
             output.push_str(&format!("{}", statement));
         }
 

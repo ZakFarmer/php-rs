@@ -1,8 +1,8 @@
-use std::io::{self, Write};
+use std::{io::{self, Write}, any::{TypeId, Any}};
 
 use anyhow::{Result, Error};
 
-use crate::{lexer::Lexer, parser::Parser, ast::LetStatement};
+use crate::{lexer::Lexer, parser::Parser, ast::{LetStatement, Statement}};
 
 const PROMPT: &str = ">> ";
 
@@ -22,11 +22,17 @@ pub fn init_repl() -> Result<(), Error> {
         parser.check_errors()?;
 
         for statement in program.statements {
-            let let_statement = statement.as_any().downcast_ref::<LetStatement>();
-
-            if let Some(let_statement) = let_statement {
-                println!("{}{} = {}", let_statement.token, let_statement.name.value, let_statement.value.as_ref().unwrap());
-            }
+            print_statement(statement);
         }
+    }
+}
+
+fn print_statement(statement: Box<dyn Statement>) {
+    match statement.as_any().type_id() {
+        id if id == TypeId::of::<LetStatement>() => {
+            let let_statement = statement.as_any().downcast_ref::<LetStatement>().unwrap();
+            println!("{:?}", let_statement);
+        },
+        _ => println!("Unknown statement type: {:?}", statement.as_any().type_id()),
     }
 }
