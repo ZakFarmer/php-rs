@@ -34,7 +34,7 @@ pub fn init_repl() -> Result<(), Error> {
                 parser.check_errors()?;
 
                 for statement in program.statements {
-                    println!("{}", &statement);
+                    println!("{:?}", &statement);
                 }
             }
             Err(ReadlineError::Interrupted) => {

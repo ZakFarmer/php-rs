@@ -7,7 +7,7 @@ use crate::{
     ast::{
         Expression, ExpressionStatement, Identifier, InfixExpression, IntegerLiteral,
         PrefixExpression, Program, ReturnStatement, Statement, VariableAssignment,
-        VariableReference, Boolean, IfExpression, BlockStatement,
+        VariableReference, Boolean, IfExpression, BlockStatement, FunctionLiteral, Node,
     },
     lexer::Lexer,
     token::{Token, TokenType},
@@ -110,6 +110,7 @@ impl<'a> Parser<'a> {
         parser.register_prefix(TokenType::True, |p| Parser::parse_boolean(p));
         parser.register_prefix(TokenType::False, |p| Parser::parse_boolean(p));
         parser.register_prefix(TokenType::Int, |p| Parser::parse_integer_literal(p));
+        parser.register_prefix(TokenType::Function, |p| Parser::parse_function_literal(p));
         parser.register_prefix(TokenType::LParen, |p| Parser::parse_grouped_expression(p));
         parser.register_prefix(TokenType::If, |p| Parser::parse_if_expression(p));
         parser.register_prefix(TokenType::Bang, |p| Parser::parse_prefix_expression(p));
@@ -218,7 +219,7 @@ impl<'a> Parser<'a> {
         if let Some(token) = &self.current_token {
             match token.token_type {
                 TokenType::Return => self.parse_return_statement(),
-                TokenType::Dollar => self.parse_variable_or_assignment(),
+                TokenType::Dollar => self.parse_assignment_statement(),
                 _ => self.parse_expression_statement(),
             }
         } else {
@@ -263,7 +264,7 @@ impl<'a> Parser<'a> {
         Some(Box::new(identifier) as Box<dyn Expression>)
     }
 
-    fn parse_variable_or_assignment(&mut self) -> Option<Box<dyn Statement>> {
+    fn parse_assignment_statement(&mut self) -> Option<Box<dyn Statement>> {
         trace!("Current token: {:?}", self.current_token);
         // Ensure the current token is a Dollar sign.
         if let Some(token) = &self.current_token {
@@ -321,15 +322,6 @@ impl<'a> Parser<'a> {
                 } else {
                     None
                 }
-            }
-            Some(token) if token.token_type == TokenType::Semicolon => {
-                // Parse as reference
-                let variable_reference = VariableReference {
-                    token: name_token.clone(),
-                    name: name_token.literal.clone(),
-                };
-
-                Some(Box::new(variable_reference) as Box<dyn Statement>)
             }
             Some(token) => {
                 self.errors
@@ -420,6 +412,72 @@ impl<'a> Parser<'a> {
             statements,
         })
     }
+
+    fn parse_function_literal(&mut self) -> Option<Box<dyn Expression>> {
+        let current_token = self.current_token.clone().unwrap();
+    
+        if !self.expect_peek(TokenType::LParen) {
+            return None;
+        }
+    
+        let parameters = self.parse_function_parameters();
+    
+        if !self.expect_peek(TokenType::LBrace) {
+            return None;
+        }
+    
+        let body = self.parse_block_statement();
+    
+        if body.as_any().is::<BlockStatement>() {
+            Some(Box::new(FunctionLiteral {
+                token: current_token,
+                parameters,
+                body: body,
+            }))
+        } else {
+            None
+        }
+    }
+    
+
+    fn parse_function_parameters(&mut self) -> Vec<Identifier> {
+        let mut identifiers = vec![];
+    
+        if self.peek_token_is(&TokenType::RParen) {
+            self.next_token(); // Consume the RParen and exit
+            return identifiers;
+        }
+    
+        // Expecting a Dollar sign and identifier (variable name)
+        if self.expect_peek(TokenType::Dollar) {
+            self.next_token(); // Consume Dollar
+            let identifier = Identifier {
+                token: self.current_token.clone().unwrap(),
+                value: self.current_token.as_ref().unwrap().to_string(),
+            };
+            identifiers.push(identifier);
+        }
+    
+        // Expecting comma-separated identifiers
+        while self.peek_token_is(&TokenType::Comma) {
+            self.next_token(); // Consume Comma
+            if self.expect_peek(TokenType::Dollar) {
+                self.next_token(); // Consume Dollar
+                let identifier = Identifier {
+                    token: self.current_token.clone().unwrap(),
+                    value: self.current_token.as_ref().unwrap().to_string(),
+                };
+                identifiers.push(identifier);
+            }
+        }
+    
+        // Expecting RParen to close the parameters list
+        if !self.expect_peek(TokenType::RParen) {
+            return vec![];
+        }
+    
+        identifiers
+    }    
 
     fn parse_grouped_expression(&mut self) -> Option<Box<dyn Expression>> {
         self.next_token();
@@ -557,13 +615,15 @@ impl<'a> Parser<'a> {
 
         self.next_token();
 
-        while !self.current_token_is(TokenType::Semicolon) {
-            self.next_token();
+        let return_value = self.parse_expression(Precedence::Lowest);
+
+        if !self.expect_peek(TokenType::Semicolon) {
+            return None;
         }
 
         Some(Box::new(ReturnStatement {
             token: current_token,
-            return_value: None, // Placeholder, you might parse expressions here in the future
+            return_value,
         }))
     }
 
@@ -582,7 +642,7 @@ mod tests {
 
     use anyhow::{Error, Result};
 
-    use crate::ast::{InfixExpression, PrefixExpression, Statement, VariableAssignment, IfExpression};
+    use crate::ast::{InfixExpression, PrefixExpression, Statement, VariableAssignment, IfExpression, FunctionLiteral};
 
     #[test]
     fn test_assignment_statements() -> Result<(), Error> {
@@ -755,6 +815,67 @@ mod tests {
 
         for statement in program.statements {
             assert_eq!("return", statement.token_literal());
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_function_literal_parsing() -> Result<(), Error> {
+        let input = "function ($x, $y) { return $x + $y; }";
+
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+
+        let program = parser.parse_program();
+        parser.check_errors()?;
+
+        assert_eq!(1, program.statements.len());
+
+        let statement = program.statements[0]
+            .as_any()
+            .downcast_ref::<ExpressionStatement>()
+            .unwrap();
+
+        let function_literal = statement
+            .expression
+            .as_ref()
+            .unwrap()
+            .as_any()
+            .downcast_ref::<FunctionLiteral>()
+            .unwrap();
+
+        assert_eq!(2, function_literal.parameters.len());
+
+        assert_eq!("x", function_literal.parameters[0].value);
+        assert_eq!("y", function_literal.parameters[1].value);
+
+        if let Some(body) = function_literal.body.as_any().downcast_ref::<BlockStatement>() {
+            assert_eq!(1, body.statements.len());
+
+            let expression = if let Some(return_statement) = body.statements[0]
+                .as_any()
+                .downcast_ref::<ReturnStatement>()
+            {
+                return_statement.return_value.as_ref().unwrap()
+            } else if let Some(expression_statement) = body.statements[0]
+                .as_any()
+                .downcast_ref::<ExpressionStatement>()
+            {
+                expression_statement.expression.as_ref().unwrap()
+            } else {
+                assert!(false, "Expected ReturnStatement or ExpressionStatement");
+                return Ok(());
+            };
+
+            assert_infix_expression(
+                expression,
+                "x",
+                "+",
+                "y",
+            )?;
+        } else {
+            assert!(false, "Expected BlockStatement");
         }
 
         Ok(())

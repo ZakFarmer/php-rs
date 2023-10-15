@@ -32,6 +32,10 @@ impl std::fmt::Display for dyn Statement {
                 let variable_reference = self.as_any().downcast_ref::<VariableReference>().unwrap();
                 format!("${:?}", variable_reference)
             }
+            id if id == std::any::TypeId::of::<FunctionLiteral>() => {
+                let function_literal = self.as_any().downcast_ref::<FunctionLiteral>().unwrap();
+                format!("{:?}", function_literal)
+            }
             _ => "".to_string(),
         };
 
@@ -41,6 +45,8 @@ impl std::fmt::Display for dyn Statement {
 
 impl Debug for dyn Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        println!("self.as_any().type_id(): {:?}", self.as_any().type_id());
+
         let statement_string = match self.as_any().type_id() {
             id if id == std::any::TypeId::of::<ExpressionStatement>() => {
                 let expression_statement =
@@ -55,6 +61,18 @@ impl Debug for dyn Statement {
                 let variable_assignment =
                     self.as_any().downcast_ref::<VariableAssignment>().unwrap();
                 format!("Assignment: {:?}", variable_assignment)
+            }
+            id if id == std::any::TypeId::of::<VariableReference>() => {
+                let variable_reference = self.as_any().downcast_ref::<VariableReference>().unwrap();
+                format!("Reference: {:?}", variable_reference)
+            }
+            id if id == std::any::TypeId::of::<FunctionLiteral>() => {
+                let function_literal = self.as_any().downcast_ref::<FunctionLiteral>().unwrap();
+                format!("Function: {:?}", function_literal)
+            }
+            id if id == std::any::TypeId::of::<BlockStatement>() => {
+                let block_statement = self.as_any().downcast_ref::<BlockStatement>().unwrap();
+                format!("Block: {:?}", block_statement)
             }
             _ => "".to_string(),
         };
@@ -87,6 +105,35 @@ impl std::fmt::Debug for dyn Expression {
                 "({}{:?})",
                 prefix_expression.operator, prefix_expression.right
             )
+        } else if self.as_any().type_id() == std::any::TypeId::of::<IntegerLiteral>() {
+            let integer_literal = self.as_any().downcast_ref::<IntegerLiteral>().unwrap();
+            write!(f, "{}", integer_literal.value)
+        } else if self.as_any().type_id() == std::any::TypeId::of::<Boolean>() {
+            let boolean = self.as_any().downcast_ref::<Boolean>().unwrap();
+            write!(f, "{}", boolean.value)
+        } else if self.as_any().type_id() == std::any::TypeId::of::<Identifier>() {
+            let identifier = self.as_any().downcast_ref::<Identifier>().unwrap();
+            write!(f, "{}", identifier.value)
+        } else if self.as_any().type_id() == std::any::TypeId::of::<IfExpression>() {
+            let if_expression = self.as_any().downcast_ref::<IfExpression>().unwrap();
+            write!(
+                f,
+                "if {:?} {:?} else {:?}",
+                if_expression.condition, if_expression.consequence, if_expression.alternative
+            )
+        } else if self.as_any().type_id() == std::any::TypeId::of::<FunctionLiteral>() {
+            let function_literal = self.as_any().downcast_ref::<FunctionLiteral>().unwrap();
+            write!(
+                f,
+                "{}({}) {:?}",
+                function_literal.token_literal(),
+                function_literal.parameters
+                    .iter()
+                    .map(|param| param.to_string())
+                    .collect::<Vec<String>>()
+                    .join(", "),
+                function_literal.body
+            )
         } else {
             write!(f, "{}", self.token_literal())
         }
@@ -100,7 +147,7 @@ pub struct Identifier {
 
 impl std::fmt::Display for Identifier {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.value)
+        write!(f, "${}", self.value)
     }
 }
 
@@ -140,6 +187,47 @@ impl Node for Boolean {
 }
 
 impl Expression for Boolean {
+    fn expression_node(&self) {}
+}
+
+pub struct FunctionLiteral {
+    pub token: Token,
+    pub parameters: Vec<Identifier>,
+    pub body: Box<dyn Statement>,
+}
+
+impl std::fmt::Debug for FunctionLiteral {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let mut output = String::new();
+
+        let mut params = Vec::new();
+
+        for param in &self.parameters {
+            params.push(format!("{}", param));
+        }
+
+        output.push_str(&format!(
+            "{}({}) aa {:?}",
+            self.token_literal(),
+            params.join(", "),
+            self.body
+        ));
+
+        write!(f, "{}", output)
+    }
+}
+
+impl Node for FunctionLiteral {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn token_literal(&self) -> &str {
+        &self.token.literal
+    }
+}
+
+impl Expression for FunctionLiteral {
     fn expression_node(&self) {}
 }
 
@@ -328,7 +416,10 @@ pub struct ReturnStatement {
 
 impl std::fmt::Debug for ReturnStatement {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{};", self.token_literal())
+        match &self.return_value {
+            Some(return_value) => write!(f, "return {:?}", return_value),
+            None => Ok(()),
+        }
     }
 }
 
