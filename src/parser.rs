@@ -7,7 +7,7 @@ use crate::{
     ast::{
         Expression, ExpressionStatement, Identifier, InfixExpression, IntegerLiteral,
         PrefixExpression, Program, ReturnStatement, Statement, VariableAssignment,
-        VariableReference, Boolean, IfExpression, BlockStatement, FunctionLiteral, Node,
+        VariableReference, Boolean, IfExpression, BlockStatement, FunctionLiteral, Node, CallExpression,
     },
     lexer::Lexer,
     token::{Token, TokenType},
@@ -103,6 +103,7 @@ impl<'a> Parser<'a> {
                 (TokenType::Minus, Precedence::Sum),
                 (TokenType::Slash, Precedence::Product),
                 (TokenType::Asterisk, Precedence::Product),
+                (TokenType::LParen, Precedence::Call),
             ]),
         };
 
@@ -116,6 +117,10 @@ impl<'a> Parser<'a> {
         parser.register_prefix(TokenType::Bang, |p| Parser::parse_prefix_expression(p));
         parser.register_prefix(TokenType::Minus, |p| Parser::parse_prefix_expression(p));
         parser.register_prefix(TokenType::Dollar, |p| Parser::parse_variable_reference_expression(p));
+
+        parser.register_infix(TokenType::LParen, |p, left| {
+            Parser::parse_call_expression(p, left)
+        });
 
         parser.register_infix(TokenType::Plus, |p, left| {
             Parser::parse_infix_expression(p, left)
@@ -519,6 +524,43 @@ impl<'a> Parser<'a> {
         }))
     }
 
+    fn parse_call_arguments(&mut self) -> Vec<Box<dyn Expression>> {
+        let mut arguments = vec![];
+
+        if self.peek_token_is(&TokenType::RParen) {
+            self.next_token(); // Consume the RParen and exit
+            return arguments;
+        }
+
+        self.next_token(); // Consume the LParen
+
+        arguments.push(self.parse_expression(Precedence::Lowest).unwrap());
+
+        while self.peek_token_is(&TokenType::Comma) {
+            self.next_token(); // Consume the comma
+            self.next_token(); // Consume the next token
+            arguments.push(self.parse_expression(Precedence::Lowest).unwrap());
+        }
+
+        if !self.expect_peek(TokenType::RParen) {
+            return vec![];
+        }
+
+        arguments
+    }
+
+    fn parse_call_expression(&mut self, function: Box<dyn Expression>) -> Option<Box<dyn Expression>> {
+        let current_token = self.current_token.clone().unwrap();
+
+        let arguments = self.parse_call_arguments();
+
+        Some(Box::new(CallExpression {
+            token: current_token,
+            function,
+            arguments,
+        }))
+    }
+
     fn parse_if_expression(&mut self) -> Option<Box<dyn Expression>> {
         let current_token = self.current_token.clone().unwrap();
 
@@ -642,7 +684,7 @@ mod tests {
 
     use anyhow::{Error, Result};
 
-    use crate::ast::{InfixExpression, PrefixExpression, Statement, VariableAssignment, IfExpression, FunctionLiteral};
+    use crate::ast::{InfixExpression, PrefixExpression, Statement, VariableAssignment, IfExpression, FunctionLiteral, CallExpression};
 
     #[test]
     fn test_assignment_statements() -> Result<(), Error> {
@@ -717,6 +759,57 @@ mod tests {
                 assert!(false, "Expected ExpressionStatement or VariableAssignment");
             }
         }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_call_expression() -> Result<(), Error> {
+        let input = "add(1, 2 * 3, 4 + 5);";
+
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+
+        let program = parser.parse_program();
+        parser.check_errors()?;
+
+        assert_eq!(1, program.statements.len());
+
+        let statement = program.statements[0]
+            .as_any()
+            .downcast_ref::<ExpressionStatement>()
+            .unwrap();
+
+        let call_expression = statement
+            .expression
+            .as_ref()
+            .unwrap()
+            .as_any()
+            .downcast_ref::<CallExpression>()
+            .unwrap();
+
+        assert_eq!("add", call_expression.function.token_literal());
+
+        assert_eq!(3, call_expression.arguments.len());
+
+        assert_literal_expression(
+            &call_expression.arguments[0],
+            "1",
+        )?;
+
+        assert_infix_expression(
+            &call_expression.arguments[1],
+            "2",
+            "*",
+            "3",
+        )?;
+
+        assert_infix_expression(
+            &call_expression.arguments[2],
+            "4",
+            "+",
+            "5",
+        )?;
 
         Ok(())
     }
@@ -937,6 +1030,15 @@ mod tests {
             ("2 / (5 + 5)", "(2 / (5 + 5))"),
             ("-(5 + 5)", "(-(5 + 5))"),
             ("!(true == true)", "(!(true == true))"),
+            ("a + add(b * c) + d", "((a + add((b * c))) + d)"),
+            (
+                "add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+                "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+            ),
+            (
+                "add(a + b + c * d / f + g)",
+                "add((((a + b) + ((c * d) / f)) + g))",
+            ),
         ];
 
         for (input, expected) in tests.iter() {

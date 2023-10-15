@@ -134,7 +134,20 @@ impl std::fmt::Debug for dyn Expression {
                     .join(", "),
                 function_literal.body
             )
-        } else {
+        } else if self.as_any().type_id() == std::any::TypeId::of::<CallExpression>() {
+            let call_expression = self.as_any().downcast_ref::<CallExpression>().unwrap();
+            write!(
+                f,
+                "{:?}({})",
+                call_expression.function,
+                call_expression.arguments
+                    .iter()
+                    .map(|arg| format!("{:?}", arg))
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            )
+        }
+        else {
             write!(f, "{}", self.token_literal())
         }
     }
@@ -253,6 +266,46 @@ impl Node for IntegerLiteral {
 }
 
 impl Expression for IntegerLiteral {
+    fn expression_node(&self) {}
+}
+
+pub struct CallExpression {
+    pub token: Token,
+    pub function: Box<dyn Expression>,
+    pub arguments: Vec<Box<dyn Expression>>,
+}
+
+impl std::fmt::Debug for CallExpression {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let mut output = String::new();
+
+        let mut args = Vec::new();
+
+        for arg in &self.arguments {
+            args.push(format!("{:?}", arg));
+        }
+
+        output.push_str(&format!(
+            "{:?}({})",
+            self.function.token_literal(),
+            args.join(", ")
+        ));
+
+        write!(f, "{}", output)
+    }
+}
+
+impl Node for CallExpression {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn token_literal(&self) -> &str {
+        ""
+    }
+}
+
+impl Expression for CallExpression {
     fn expression_node(&self) {}
 }
 
