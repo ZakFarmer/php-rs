@@ -32,7 +32,7 @@ impl<'a> Lexer<'a> {
                 } else {
                     (TokenType::Assign, "=".to_string())
                 }
-            },
+            }
             Some(';') => (TokenType::Semicolon, ";".to_string()),
             Some('(') => (TokenType::LParen, "(".to_string()),
             Some(')') => (TokenType::RParen, ")".to_string()),
@@ -48,7 +48,7 @@ impl<'a> Lexer<'a> {
                 } else {
                     (TokenType::Bang, "!".to_string())
                 }
-            },
+            }
             Some('/') => (TokenType::Slash, "/".to_string()),
             Some('*') => (TokenType::Asterisk, "*".to_string()),
             Some('<') => (TokenType::Lt, "<".to_string()),
@@ -60,14 +60,14 @@ impl<'a> Lexer<'a> {
 
                     return Token {
                         token_type: TokenType::lookup_ident(&literal),
-                        literal
+                        literal,
                     };
                 } else if ch.is_ascii_digit() {
                     let literal = self.read_number();
 
                     return Token {
                         token_type: TokenType::Int,
-                        literal
+                        literal,
                     };
                 } else {
                     (TokenType::Illegal, ch.to_string())
@@ -77,7 +77,7 @@ impl<'a> Lexer<'a> {
         };
 
         self.read_char();
-    
+
         Token {
             token_type,
             literal,
@@ -148,8 +148,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_lexer() -> Result<(), Error>{
-        let input = String::from("
+    fn test_lexer() -> Result<(), Error> {
+        let input = "
             $five = 5;
 
             $ten = five + 5;
@@ -159,7 +159,8 @@ mod tests {
             }
 
             $result = add(five, ten);
-        ");
+        "
+        .to_string();
 
         let expected_tokens = [
             Token {
