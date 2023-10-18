@@ -2,7 +2,7 @@ use anyhow::{Error, Result};
 
 use rustyline::error::ReadlineError;
 
-use crate::{lexer::Lexer, parser::Parser, evaluator};
+use crate::{evaluator, lexer::Lexer, parser::Parser};
 
 const PROMPT: &str = ">> ";
 

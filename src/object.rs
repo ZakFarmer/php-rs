@@ -27,7 +27,7 @@ impl std::fmt::Display for Object {
                 }
 
                 write!(f, "fn({}) {{\n{}\n}}", parameters_string, body)
-            },
+            }
             Object::Return(value) => write!(f, "{}", value),
             Object::Null => write!(f, "null"),
         }

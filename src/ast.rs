@@ -19,7 +19,7 @@ impl std::fmt::Display for Node {
 pub enum Literal {
     Integer(Integer),
     Boolean(Boolean),
-    String(StringLiteral)
+    String(StringLiteral),
 }
 
 impl std::fmt::Display for Literal {
@@ -65,20 +65,27 @@ impl std::fmt::Display for Expression {
                 alternative,
             }) => {
                 if let Some(alternative) = alternative {
-                    write!(f, "if {} {{\n{}\n}} else {{\n{}\n}}", condition, consequence, alternative)
+                    write!(
+                        f,
+                        "if {} {{\n{}\n}} else {{\n{}\n}}",
+                        condition, consequence, alternative
+                    )
                 } else {
                     write!(f, "if {} {{\n{}\n}}", condition, consequence)
                 }
-            },
+            }
             Expression::Function(FunctionLiteral {
                 token,
                 parameters,
                 body,
             }) => {
-                let params = parameters.iter().map(|p| p.to_string()).collect::<Vec<String>>();
+                let params = parameters
+                    .iter()
+                    .map(|p| p.to_string())
+                    .collect::<Vec<String>>();
 
                 write!(f, "fn({}) {{\n{}\n}}", params.join(", "), body)
-            },
+            }
             Expression::Call(CallExpression {
                 token,
                 function,
@@ -109,11 +116,9 @@ pub enum Statement {
 impl std::fmt::Display for Statement {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Statement::Assign(Assignment {
-                token,
-                name,
-                value,
-            }) => write!(f, "{} {} = {}", token, name, value),
+            Statement::Assign(Assignment { token, name, value }) => {
+                write!(f, "{} {} = {}", token, name, value)
+            }
             Statement::Expr(expression) => write!(f, "{}", expression),
             Statement::Return(ReturnStatement {
                 token,

@@ -1,7 +1,10 @@
 use anyhow::{Error, Result};
 use lazy_static::lazy_static;
 
-use crate::{object::{Object, self}, ast::{Node, Program, Statement, Boolean, Expression, Literal}};
+use crate::{
+    ast::{Boolean, Expression, Literal, Node, Program, Statement},
+    object::{self, Object},
+};
 
 lazy_static! {
     static ref TRUE: Object = Object::Boolean(true);
@@ -73,16 +76,13 @@ fn native_bool_to_bool_object(input: bool) -> &'static Object {
 mod tests {
     use anyhow::Error;
 
-    use crate::{object::{Object}, lexer::Lexer, parser::Parser};
+    use crate::{lexer::Lexer, object::Object, parser::Parser};
 
     use super::*;
 
     #[test]
     fn test_eval_boolean_literals() -> Result<(), Error> {
-        let tests = vec![
-            ("true", true),
-            ("false", false),
-        ];
+        let tests = vec![("true", true), ("false", false)];
 
         for (input, expected) in tests {
             let evaluated = assert_eval(input)?;
@@ -94,10 +94,7 @@ mod tests {
 
     #[test]
     fn test_eval_integer_expression() -> Result<(), Error> {
-        let tests = vec![
-            ("5", 5),
-            ("10", 10),
-        ];
+        let tests = vec![("5", 5), ("10", 10)];
 
         for (input, expected) in tests {
             let evaluated = assert_eval(input)?;
@@ -114,7 +111,8 @@ mod tests {
         let program = parser.parse_program();
         parser.check_errors()?;
 
-        let evaluated = eval_statements(&program.statements).ok_or_else(|| anyhow::anyhow!("eval returned None"))?;
+        let evaluated = eval_statements(&program.statements)
+            .ok_or_else(|| anyhow::anyhow!("eval returned None"))?;
 
         Ok(evaluated)
     }

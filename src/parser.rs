@@ -5,8 +5,9 @@ use log::trace;
 
 use crate::{
     ast::{
-        Expression, Identifier, InfixExpression,
-        PrefixExpression, Program, ReturnStatement, Statement, Boolean, IfExpression, BlockStatement, FunctionLiteral, Node, Assignment, CallExpression, Literal, Integer,
+        Assignment, BlockStatement, Boolean, CallExpression, Expression, FunctionLiteral,
+        Identifier, IfExpression, InfixExpression, Integer, Literal, Node, PrefixExpression,
+        Program, ReturnStatement, Statement,
     },
     lexer::Lexer,
     token::{Token, TokenType},
@@ -115,7 +116,9 @@ impl<'a> Parser<'a> {
         parser.register_prefix(TokenType::If, |p| Parser::parse_if_expression(p));
         parser.register_prefix(TokenType::Bang, |p| Parser::parse_prefix_expression(p));
         parser.register_prefix(TokenType::Minus, |p| Parser::parse_prefix_expression(p));
-        parser.register_prefix(TokenType::Dollar, |p| Parser::parse_variable_reference_expression(p));
+        parser.register_prefix(TokenType::Dollar, |p| {
+            Parser::parse_variable_reference_expression(p)
+        });
 
         parser.register_infix(TokenType::LParen, |p, left| {
             Parser::parse_call_expression(p, left)
@@ -197,7 +200,7 @@ impl<'a> Parser<'a> {
             }
         };
 
-        Some(Expression::Literal(Literal::Boolean( Boolean {
+        Some(Expression::Literal(Literal::Boolean(Boolean {
             token: current_token,
             value,
         })))
@@ -397,9 +400,7 @@ impl<'a> Parser<'a> {
 
         self.next_token();
 
-        while !self.current_token_is(TokenType::RBrace)
-            && !self.current_token_is(TokenType::Eof)
-        {
+        while !self.current_token_is(TokenType::RBrace) && !self.current_token_is(TokenType::Eof) {
             let statement = self.parse_statement();
 
             if let Some(statement) = statement {
@@ -417,19 +418,19 @@ impl<'a> Parser<'a> {
 
     fn parse_function_literal(&mut self) -> Option<Expression> {
         let current_token = self.current_token.clone().unwrap();
-    
+
         if !self.expect_peek(TokenType::LParen) {
             return None;
         }
-    
+
         let parameters = self.parse_function_parameters();
-    
+
         if !self.expect_peek(TokenType::LBrace) {
             return None;
         }
-    
+
         let body = self.parse_block_statement();
-        
+
         if let Some(body) = body {
             Some(Expression::Function(FunctionLiteral {
                 token: current_token,
@@ -440,16 +441,15 @@ impl<'a> Parser<'a> {
             None
         }
     }
-    
 
     fn parse_function_parameters(&mut self) -> Vec<Identifier> {
         let mut identifiers = vec![];
-    
+
         if self.peek_token_is(&TokenType::RParen) {
             self.next_token(); // Consume the RParen and exit
             return identifiers;
         }
-    
+
         // Expecting a Dollar sign and identifier (variable name)
         if self.expect_peek(TokenType::Dollar) {
             self.next_token(); // Consume Dollar
@@ -459,7 +459,7 @@ impl<'a> Parser<'a> {
             };
             identifiers.push(identifier);
         }
-    
+
         // Expecting comma-separated identifiers
         while self.peek_token_is(&TokenType::Comma) {
             self.next_token(); // Consume Comma
@@ -472,14 +472,14 @@ impl<'a> Parser<'a> {
                 identifiers.push(identifier);
             }
         }
-    
+
         // Expecting RParen to close the parameters list
         if !self.expect_peek(TokenType::RParen) {
             return vec![];
         }
-    
+
         identifiers
-    }    
+    }
 
     fn parse_grouped_expression(&mut self) -> Option<Expression> {
         self.next_token();
@@ -681,7 +681,9 @@ mod tests {
 
     use anyhow::{Error, Result};
 
-    use crate::ast::{InfixExpression, PrefixExpression, Statement, IfExpression, FunctionLiteral, CallExpression};
+    use crate::ast::{
+        CallExpression, FunctionLiteral, IfExpression, InfixExpression, PrefixExpression, Statement,
+    };
 
     #[test]
     fn test_assignment_statements() -> Result<(), Error> {
@@ -742,7 +744,9 @@ mod tests {
                     }
                 }
                 Statement::Assign(variable_assignment) => {
-                    if let Expression::Literal(Literal::Boolean(boolean)) = &variable_assignment.value {
+                    if let Expression::Literal(Literal::Boolean(boolean)) =
+                        &variable_assignment.value
+                    {
                         assert_eq!(expected_values[i], boolean.value);
                     } else {
                         assert!(false, "Expected Boolean expression");
@@ -775,24 +779,11 @@ mod tests {
 
                 assert_eq!(3, call_expression.arguments.len());
 
-                assert_literal_expression(
-                    &call_expression.arguments[0],
-                    "1",
-                )?;
+                assert_literal_expression(&call_expression.arguments[0], "1")?;
 
-                assert_infix_expression(
-                    &call_expression.arguments[1],
-                    "2",
-                    "*",
-                    "3",
-                )?;
+                assert_infix_expression(&call_expression.arguments[1], "2", "*", "3")?;
 
-                assert_infix_expression(
-                    &call_expression.arguments[2],
-                    "4",
-                    "+",
-                    "5",
-                )?;
+                assert_infix_expression(&call_expression.arguments[2], "4", "+", "5")?;
             } else {
                 assert!(false, "Expected CallExpression");
             }
@@ -820,12 +811,7 @@ mod tests {
 
         if let Statement::Expr(expression) = &program.statements[0] {
             if let Expression::If(if_expression) = &expression {
-                assert_infix_expression(
-                    &if_expression.condition,
-                    "x",
-                    "<",
-                    "y",
-                )?;
+                assert_infix_expression(&if_expression.condition, "x", "<", "y")?;
 
                 assert_eq!(1, if_expression.consequence.statements.len());
 
@@ -863,12 +849,7 @@ mod tests {
 
         if let Statement::Expr(expression) = &program.statements[0] {
             if let Expression::If(if_expression) = &expression {
-                assert_infix_expression(
-                    &if_expression.condition,
-                    "x",
-                    "<",
-                    "y",
-                )?;
+                assert_infix_expression(&if_expression.condition, "x", "<", "y")?;
 
                 assert_eq!(1, if_expression.consequence.statements.len());
 
@@ -880,7 +861,10 @@ mod tests {
                     assert!(false, "Expected ReturnStatement");
                 }
 
-                assert_eq!(1, if_expression.alternative.as_ref().unwrap().statements.len());
+                assert_eq!(
+                    1,
+                    if_expression.alternative.as_ref().unwrap().statements.len()
+                );
 
                 if let Statement::Return(return_statement) =
                     &if_expression.alternative.as_ref().unwrap().statements[0]
@@ -1066,11 +1050,7 @@ mod tests {
             assert_eq!(1, program.statements.len());
 
             if let Statement::Expr(expression) = &program.statements[0] {
-                assert_prefix_expression(
-                    &expression,
-                    *_operator,
-                    *value,
-                )?;
+                assert_prefix_expression(&expression, *_operator, *value)?;
             } else {
                 assert!(false, "Expected ExpressionStatement");
             }
@@ -1134,29 +1114,19 @@ mod tests {
     fn assert_function_literal(expression: &Expression) -> Result<(), Error> {
         if let Expression::Function(function_literal) = expression {
             assert_eq!(2, function_literal.parameters.len());
-    
+
             assert_eq!("x", function_literal.parameters[0].value);
             assert_eq!("y", function_literal.parameters[1].value);
-    
+
             if let BlockStatement { statements, .. } = &function_literal.body {
                 assert_eq!(1, statements.len());
-    
+
                 match &statements[0] {
                     Statement::Return(return_statement) => {
-                        assert_infix_expression(
-                            &return_statement.return_value,
-                            "x",
-                            "+",
-                            "y",
-                        )?;
+                        assert_infix_expression(&return_statement.return_value, "x", "+", "y")?;
                     }
                     Statement::Expr(expression) => {
-                        assert_infix_expression(
-                            expression,
-                            "x",
-                            "+",
-                            "y",
-                        )?;
+                        assert_infix_expression(expression, "x", "+", "y")?;
                     }
                     _ => assert!(false, "Expected ReturnStatement or ExpressionStatement"),
                 }
@@ -1166,32 +1136,19 @@ mod tests {
         } else {
             assert!(false, "Expected FunctionLiteral");
         }
-    
+
         Ok(())
-    }    
+    }
 
     fn assert_call_expression(expression: &Expression) -> Result<(), Error> {
         if let Expression::Call(call_expression) = expression {
             assert_eq!(3, call_expression.arguments.len());
 
-            assert_literal_expression(
-                &call_expression.arguments[0],
-                "1",
-            )?;
+            assert_literal_expression(&call_expression.arguments[0], "1")?;
 
-            assert_infix_expression(
-                &call_expression.arguments[1],
-                "2",
-                "*",
-                "3",
-            )?;
+            assert_infix_expression(&call_expression.arguments[1], "2", "*", "3")?;
 
-            assert_infix_expression(
-                &call_expression.arguments[2],
-                "4",
-                "+",
-                "5",
-            )?;
+            assert_infix_expression(&call_expression.arguments[2], "4", "+", "5")?;
         } else {
             assert!(false, "Expected CallExpression");
         }
@@ -1237,10 +1194,7 @@ mod tests {
         Ok(())
     }
 
-    fn assert_literal_expression(
-        expression: &Expression,
-        expected: &str,
-    ) -> Result<bool, Error> {
+    fn assert_literal_expression(expression: &Expression, expected: &str) -> Result<bool, Error> {
         match expression {
             Expression::Literal(Literal::Integer(integer_literal)) => {
                 assert_eq!(expected, integer_literal.value.to_string());
