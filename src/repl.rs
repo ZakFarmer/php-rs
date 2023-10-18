@@ -2,7 +2,7 @@ use anyhow::{Error, Result};
 
 use rustyline::error::ReadlineError;
 
-use crate::{lexer::Lexer, parser::Parser};
+use crate::{lexer::Lexer, parser::Parser, evaluator};
 
 const PROMPT: &str = ">> ";
 
@@ -33,8 +33,10 @@ pub fn init_repl() -> Result<(), Error> {
                 let program = parser.parse_program();
                 parser.check_errors()?;
 
-                for statement in program.statements {
-                    println!("{:?}", &statement);
+                let evaluation = evaluator::eval_statements(&program.statements);
+
+                if let Some(evaluated) = evaluation {
+                    println!("{}", evaluated);
                 }
             }
             Err(ReadlineError::Interrupted) => {
