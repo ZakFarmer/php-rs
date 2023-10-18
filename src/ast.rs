@@ -140,7 +140,7 @@ impl std::fmt::Display for Program {
         let mut program_string = String::new();
 
         for statement in &self.statements {
-            program_string.push_str(&format!("{}\n", statement));
+            program_string.push_str(&format!("{}", statement));
         }
 
         write!(f, "{}", program_string)

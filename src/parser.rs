@@ -590,7 +590,7 @@ impl<'a> Parser<'a> {
                 return None;
             }
 
-            Some(self.parse_block_statement())
+            self.parse_block_statement()
         } else {
             None
         };
@@ -599,7 +599,7 @@ impl<'a> Parser<'a> {
             token: current_token,
             condition: Box::new(condition.unwrap()),
             consequence: consequence.unwrap(),
-            alternative: alternative.unwrap(),
+            alternative: alternative,
         }))
     }
 
@@ -915,9 +915,9 @@ mod tests {
 
         assert_eq!(3, program.statements.len());
 
-        for statement in program.statements {
-            assert_eq!("return", statement.to_string());
-        }
+        assert_eq!("return 5", program.statements[0].to_string());
+        assert_eq!("return 10", program.statements[1].to_string());
+        assert_eq!("return 993322", program.statements[2].to_string());
 
         Ok(())
     }
@@ -1008,10 +1008,6 @@ mod tests {
 
             let program = parser.parse_program();
             parser.check_errors()?;
-
-            for statement in &program.statements {
-                println!("{}", statement);
-            }
 
             assert_eq!(*expected, program.to_string());
         }
@@ -1138,22 +1134,31 @@ mod tests {
     fn assert_function_literal(expression: &Expression) -> Result<(), Error> {
         if let Expression::Function(function_literal) = expression {
             assert_eq!(2, function_literal.parameters.len());
-
+    
             assert_eq!("x", function_literal.parameters[0].value);
             assert_eq!("y", function_literal.parameters[1].value);
-
+    
             if let BlockStatement { statements, .. } = &function_literal.body {
                 assert_eq!(1, statements.len());
-
-                if let Statement::Expr(expression) = &statements[0] {
-                    assert_infix_expression(
-                        &expression,
-                        "x",
-                        "+",
-                        "y",
-                    )?;
-                } else {
-                    assert!(false, "Expected ExpressionStatement");
+    
+                match &statements[0] {
+                    Statement::Return(return_statement) => {
+                        assert_infix_expression(
+                            &return_statement.return_value,
+                            "x",
+                            "+",
+                            "y",
+                        )?;
+                    }
+                    Statement::Expr(expression) => {
+                        assert_infix_expression(
+                            expression,
+                            "x",
+                            "+",
+                            "y",
+                        )?;
+                    }
+                    _ => assert!(false, "Expected ReturnStatement or ExpressionStatement"),
                 }
             } else {
                 assert!(false, "Expected BlockStatement");
@@ -1161,9 +1166,9 @@ mod tests {
         } else {
             assert!(false, "Expected FunctionLiteral");
         }
-
+    
         Ok(())
-    }
+    }    
 
     fn assert_call_expression(expression: &Expression) -> Result<(), Error> {
         if let Expression::Call(call_expression) = expression {
