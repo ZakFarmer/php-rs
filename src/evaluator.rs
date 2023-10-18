@@ -1,9 +1,9 @@
-use anyhow::{Error, Result};
+
 use lazy_static::lazy_static;
 
 use crate::{
-    ast::{Boolean, Expression, Literal, Node, Program, Statement},
-    object::{self, Object},
+    ast::{Boolean, Expression, Literal, Node, Statement},
+    object::{Object},
 };
 
 lazy_static! {
@@ -51,7 +51,7 @@ fn eval_statement(statement: &Statement) -> Option<Object> {
     }
 }
 
-fn eval_identifier(identifier: String) -> Option<Object> {
+fn eval_identifier(_identifier: String) -> Option<Object> {
     unimplemented!("eval_identifier");
 }
 

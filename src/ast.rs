@@ -25,9 +25,9 @@ pub enum Literal {
 impl std::fmt::Display for Literal {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Literal::Integer(Integer { token, value }) => write!(f, "{}", value),
-            Literal::Boolean(Boolean { token, value }) => write!(f, "{}", value),
-            Literal::String(StringLiteral { token, value }) => write!(f, "{}", value),
+            Literal::Integer(Integer { token: _, value }) => write!(f, "{}", value),
+            Literal::Boolean(Boolean { token: _, value }) => write!(f, "{}", value),
+            Literal::String(StringLiteral { token: _, value }) => write!(f, "{}", value),
         }
     }
 }
@@ -48,18 +48,18 @@ impl std::fmt::Display for Expression {
             Expression::Identifier(identifier) => write!(f, "{}", identifier),
             Expression::Literal(literal) => write!(f, "{}", literal),
             Expression::Infix(InfixExpression {
-                token,
+                token: _,
                 left,
                 operator,
                 right,
             }) => write!(f, "({} {} {})", left, operator, right),
             Expression::Prefix(PrefixExpression {
-                token,
+                token: _,
                 operator,
                 right,
             }) => write!(f, "({}{})", operator, right),
             Expression::If(IfExpression {
-                token,
+                token: _,
                 condition,
                 consequence,
                 alternative,
@@ -75,7 +75,7 @@ impl std::fmt::Display for Expression {
                 }
             }
             Expression::Function(FunctionLiteral {
-                token,
+                token: _,
                 parameters,
                 body,
             }) => {
@@ -87,7 +87,7 @@ impl std::fmt::Display for Expression {
                 write!(f, "fn({}) {{\n{}\n}}", params.join(", "), body)
             }
             Expression::Call(CallExpression {
-                token,
+                token: _,
                 function,
                 arguments,
             }) => {

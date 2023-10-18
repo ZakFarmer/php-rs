@@ -6,7 +6,7 @@ use log::trace;
 use crate::{
     ast::{
         Assignment, BlockStatement, Boolean, CallExpression, Expression, FunctionLiteral,
-        Identifier, IfExpression, InfixExpression, Integer, Literal, Node, PrefixExpression,
+        Identifier, IfExpression, InfixExpression, Integer, Literal, PrefixExpression,
         Program, ReturnStatement, Statement,
     },
     lexer::Lexer,
@@ -381,7 +381,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expression_statement(&mut self) -> Option<Statement> {
-        let current_token = self.current_token.clone().unwrap();
+        let _current_token = self.current_token.clone().unwrap();
 
         let expression = self.parse_expression(Precedence::Lowest);
 
@@ -682,7 +682,7 @@ mod tests {
     use anyhow::{Error, Result};
 
     use crate::ast::{
-        CallExpression, FunctionLiteral, IfExpression, InfixExpression, PrefixExpression, Statement,
+        Statement,
     };
 
     #[test]
