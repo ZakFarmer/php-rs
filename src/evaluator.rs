@@ -41,7 +41,62 @@ fn eval_expression(expression: &Expression) -> Option<Object> {
     match expression {
         Expression::Identifier(identifier) => eval_identifier(identifier.to_string()),
         Expression::Literal(literal) => eval_literal(&literal),
-        Expression::Prefix(prefix) => eval_prefix_expression(prefix.operator.to_string(), &prefix.right),
+        Expression::Infix(infix) => eval_infix_expression(
+            infix.operator.to_string(),
+            &infix.left,
+            &infix.right,
+        ),
+        Expression::Prefix(prefix) => eval_prefix_expression(
+            prefix.operator.to_string(), 
+            &prefix.right
+        ),
+        _ => None,
+    }
+}
+
+fn eval_infix_expression(operator: String, left: &Expression, right: &Expression) -> Option<Object> {
+    let left = eval_expression(left)?;
+    let right = eval_expression(right)?;
+
+    match (left, right) {
+        (Object::Integer(left), Object::Integer(right)) => {
+            eval_integer_infix_expression(operator, left, right)
+        }
+        (Object::Boolean(left), Object::Boolean(right)) => {
+            eval_boolean_infix_expression(operator, left, right)
+        }
+        (Object::String(left), Object::String(right)) => {
+            eval_string_infix_expression(operator, left, right)
+        }
+        _ => None,
+    }
+}
+
+fn eval_boolean_infix_expression(operator: String, left: bool, right: bool) -> Option<Object> {
+    match operator.as_str() {
+        "==" => Some(native_bool_to_bool_object(left == right)),
+        "!=" => Some(native_bool_to_bool_object(left != right)),
+        _ => None,
+    }
+}
+
+fn eval_integer_infix_expression(operator: String, left: i64, right: i64) -> Option<Object> {
+    match operator.as_str() {
+        "+" => Some(Object::Integer(left + right)),
+        "-" => Some(Object::Integer(left - right)),
+        "*" => Some(Object::Integer(left * right)),
+        "/" => Some(Object::Integer(left / right)),
+        "<" => Some(native_bool_to_bool_object(left < right)),
+        ">" => Some(native_bool_to_bool_object(left > right)),
+        "==" => Some(native_bool_to_bool_object(left == right)),
+        "!=" => Some(native_bool_to_bool_object(left != right)),
+        _ => None,
+    }
+}
+
+fn eval_string_infix_expression(operator: String, left: String, right: String) -> Option<Object> {
+    match operator.as_str() {
+        "+" => Some(Object::String(format!("{}{}", left, right))),
         _ => None,
     }
 }
@@ -50,6 +105,7 @@ fn eval_prefix_expression(operator: String, right: &Expression) -> Option<Object
     let right = eval_expression(right)?;
 
     match operator.as_str() {
+        "-" => Some(eval_minus_prefix_operator_expression(right)),
         "!" => Some(eval_bang_operator_expression(right)),
         _ => None,
     }
@@ -61,6 +117,13 @@ fn eval_bang_operator_expression(right: Object) -> Object {
         val if val == *FALSE => TRUE.clone(),
         val if val == *NULL => TRUE.clone(),
         _ => FALSE.clone(),
+    }
+}
+
+fn eval_minus_prefix_operator_expression(right: Object) -> Object {
+    match right {
+        Object::Integer(integer) => Object::Integer(-integer),
+        _ => NULL.clone(),
     }
 }
 
@@ -84,11 +147,11 @@ fn eval_literal(literal: &Literal) -> Option<Object> {
     }
 }
 
-fn native_bool_to_bool_object(input: bool) -> &'static Object {
+fn native_bool_to_bool_object(input: bool) -> Object {
     if input {
-        &TRUE
+        TRUE.clone()
     } else {
-        &FALSE
+        FALSE.clone()
     }
 }
 
@@ -113,8 +176,56 @@ mod tests {
     }
 
     #[test]
+    fn test_eval_boolean_expression() -> Result<(), Error> {
+        let tests = vec![
+            ("true", true),
+            ("false", false),
+            ("1 < 2", true),
+            ("1 > 2", false),
+            ("1 < 1", false),
+            ("1 > 1", false),
+            ("1 == 1", true),
+            ("1 != 1", false),
+            ("1 == 2", false),
+            ("1 != 2", true),
+            ("true == true", true),
+            ("false == false", true),
+            ("true == false", false),
+            ("true != false", true),
+            ("false != true", true),
+            ("(1 < 2) == true", true),
+            ("(1 < 2) == false", false),
+            ("(1 > 2) == true", false),
+            ("(1 > 2) == false", true),
+        ];
+
+        for (input, expected) in tests {
+            let evaluated = assert_eval(input)?;
+            assert_boolean_literal_object(evaluated, expected)?;
+        }
+
+        Ok(())
+    }
+
+    #[test]
     fn test_eval_integer_expression() -> Result<(), Error> {
-        let tests = vec![("5", 5), ("10", 10)];
+        let tests = vec![
+            ("5", 5), 
+            ("10", 10),
+            ("-5", -5),
+            ("-10", -10),
+            ("5 + 5 + 5 + 5 - 10", 10),
+            ("2 * 2 * 2 * 2 * 2", 32),
+            ("-50 + 100 + -50", 0),
+            ("5 * 2 + 10", 20),
+            ("5 + 2 * 10", 25),
+            ("20 + 2 * -10", 0),
+            ("50 / 2 * 2 + 10", 60),
+            ("2 * (5 + 10)", 30),
+            ("3 * 3 * 3 + 10", 37),
+            ("3 * (3 * 3) + 10", 37),
+            ("(5 + 10 * 2 + 15 / 3) * 2 + -10", 50),
+        ];
 
         for (input, expected) in tests {
             let evaluated = assert_eval(input)?;
