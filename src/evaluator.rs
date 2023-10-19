@@ -9,6 +9,7 @@ use crate::{
 lazy_static! {
     static ref TRUE: Object = Object::Boolean(true);
     static ref FALSE: Object = Object::Boolean(false);
+    static ref NULL: Object = Object::Null;
 }
 
 pub fn eval(node: Node) -> Option<Object> {
@@ -40,7 +41,26 @@ fn eval_expression(expression: &Expression) -> Option<Object> {
     match expression {
         Expression::Identifier(identifier) => eval_identifier(identifier.to_string()),
         Expression::Literal(literal) => eval_literal(&literal),
+        Expression::Prefix(prefix) => eval_prefix_expression(prefix.operator.to_string(), &prefix.right),
         _ => None,
+    }
+}
+
+fn eval_prefix_expression(operator: String, right: &Expression) -> Option<Object> {
+    let right = eval_expression(right)?;
+
+    match operator.as_str() {
+        "!" => Some(eval_bang_operator_expression(right)),
+        _ => None,
+    }
+}
+
+fn eval_bang_operator_expression(right: Object) -> Object {
+    match right {
+        val if val == *TRUE => FALSE.clone(),
+        val if val == *FALSE => TRUE.clone(),
+        val if val == *NULL => TRUE.clone(),
+        _ => FALSE.clone(),
     }
 }
 
@@ -99,6 +119,18 @@ mod tests {
         for (input, expected) in tests {
             let evaluated = assert_eval(input)?;
             assert_integer_object(evaluated, expected)?;
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_eval_bang_operator() -> Result<(), Error> {
+        let tests = vec![("!true", false), ("!false", true), ("!5", false), ("!!true", true)];
+
+        for (input, expected) in tests {
+            let evaluated = assert_eval(input)?;
+            assert_boolean_literal_object(evaluated, expected)?;
         }
 
         Ok(())
