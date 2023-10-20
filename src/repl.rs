@@ -35,7 +35,7 @@ pub fn init_repl() -> Result<(), Error> {
 
                 let evaluation = evaluator::eval_statements(&program.statements);
 
-                if let Some(evaluated) = evaluation {
+                if let Ok(evaluated) = evaluation {
                     println!("{}", evaluated);
                 }
             }

@@ -16,7 +16,7 @@ impl std::fmt::Display for Node {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Literal {
     Integer(Integer),
     Boolean(Boolean),
@@ -33,7 +33,7 @@ impl std::fmt::Display for Literal {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Expression {
     Identifier(Identifier),
     Literal(Literal),
@@ -109,7 +109,7 @@ impl std::fmt::Display for Expression {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Statement {
     Assign(Assignment),
     Expr(Expression),
@@ -131,7 +131,7 @@ impl std::fmt::Display for Statement {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Program {
     pub statements: Vec<Statement>,
 }
@@ -157,40 +157,40 @@ impl std::fmt::Display for Program {
 }
 
 // LITERALS
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Boolean {
     pub token: Token,
     pub value: bool,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Integer {
     pub token: Token,
     pub value: i64,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct StringLiteral {
     pub token: Token,
     pub value: String,
 }
 
 // EXPRESSIONS
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct FunctionLiteral {
     pub token: Token,
     pub parameters: Vec<Identifier>,
     pub body: BlockStatement,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct CallExpression {
     pub token: Token,
     pub function: Box<Expression>,
     pub arguments: Vec<Expression>,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Identifier {
     pub token: Token,
     pub value: String,
@@ -202,7 +202,7 @@ impl std::fmt::Display for Identifier {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct IfExpression {
     pub token: Token,
     pub condition: Box<Expression>,
@@ -210,7 +210,7 @@ pub struct IfExpression {
     pub alternative: Option<BlockStatement>,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct InfixExpression {
     pub token: Token,
     pub left: Box<Expression>,
@@ -218,7 +218,7 @@ pub struct InfixExpression {
     pub right: Box<Expression>,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct PrefixExpression {
     pub token: Token,
     pub operator: String,
@@ -226,14 +226,14 @@ pub struct PrefixExpression {
 }
 
 // STATEMENTS
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Assignment {
     pub token: Token,
     pub name: Identifier,
     pub value: Expression,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct BlockStatement {
     pub token: Token,
     pub statements: Vec<Statement>,
@@ -251,7 +251,7 @@ impl std::fmt::Display for BlockStatement {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ReturnStatement {
     pub token: Token,
     pub return_value: Expression,

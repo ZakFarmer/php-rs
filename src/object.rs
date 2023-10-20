@@ -1,6 +1,6 @@
 use crate::ast::BlockStatement;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Object {
     Integer(i64),
     Boolean(bool),

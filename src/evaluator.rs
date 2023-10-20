@@ -1,10 +1,8 @@
 
+use anyhow::{Result, Ok, Error};
 use lazy_static::lazy_static;
 
-use crate::{
-    ast::{Boolean, Expression, Literal, Node, Statement},
-    object::{Object},
-};
+use crate::{ast::{Boolean, Expression, Literal, Node, Statement, IfExpression}, object::Object};
 
 lazy_static! {
     static ref TRUE: Object = Object::Boolean(true);
@@ -12,49 +10,85 @@ lazy_static! {
     static ref NULL: Object = Object::Null;
 }
 
-pub fn eval(node: Node) -> Option<Object> {
+pub fn eval(node: Node) -> Result<Object> {
     match node {
         Node::Expression(expression) => eval_expression(&expression),
         Node::Program(program) => eval_statements(&program.statements),
         Node::Statement(statement) => eval_statement(&statement),
-        _ => None,
+        _ => Err(Error::msg(format!("Unknown node type: {}", node))),
     }
 }
 
-pub fn eval_statements(statements: &Vec<Statement>) -> Option<Object> {
-    let mut result = None;
+pub fn eval_statements(statements: &Vec<Statement>) -> Result<Object> {
+    let mut result: Object = NULL.clone();
 
     for statement in statements {
         let val = eval_statement(statement);
 
-        match val {
-            Some(Object::Return(value)) => return Some(*value),
-            Some(_) => result = val,
-            None => return None,
+        if let Err(err) = val {
+            return Err(err);
+        }
+
+        result = val.unwrap();
+
+        if let Object::Return(value) = result {
+            return Ok(*value);
         }
     }
 
-    result
+    Ok(result)
 }
 
-fn eval_expression(expression: &Expression) -> Option<Object> {
-    match expression {
-        Expression::Identifier(identifier) => eval_identifier(identifier.to_string()),
-        Expression::Literal(literal) => eval_literal(&literal),
-        Expression::Infix(infix) => eval_infix_expression(
-            infix.operator.to_string(),
-            &infix.left,
-            &infix.right,
-        ),
-        Expression::Prefix(prefix) => eval_prefix_expression(
-            prefix.operator.to_string(), 
-            &prefix.right
-        ),
-        _ => None,
+fn is_truthy(object: &Object) -> bool {
+    match object {
+        Object::Null => false,
+        Object::Boolean(boolean) => *boolean,
+        _ => true,
     }
 }
 
-fn eval_infix_expression(operator: String, left: &Expression, right: &Expression) -> Option<Object> {
+fn eval_expression(expression: &Expression) -> Result<Object> {
+    match expression {
+        Expression::Identifier(identifier_expression) => eval_identifier(identifier_expression.to_string()),
+        Expression::Literal(literal) => eval_literal(&literal),
+        Expression::Infix(infix_expression) => eval_infix_expression(
+            infix_expression.operator.to_string(),
+            &infix_expression.left,
+            &infix_expression.right,
+        ),
+        Expression::Prefix(prefix_expression) => eval_prefix_expression(
+            prefix_expression.operator.to_string(), 
+            &prefix_expression.right
+        ),
+        Expression::If(if_expression) => eval_if_expression(expression),
+        _ => Err(Error::msg(format!("Unknown expression type: {}", expression))),
+    }
+}
+
+fn eval_if_expression(expression: &Expression) -> Result<Object> {
+    if let Expression::If(IfExpression {
+        condition,
+        consequence,
+        alternative,
+        ..
+    }) = expression
+    {
+        let condition = eval_expression(condition)?;
+
+        if is_truthy(&condition) {
+            eval_statements(&consequence.statements)
+        } else {
+            match alternative {
+                Some(alternative) => eval_statements(&alternative.statements),
+                None => Ok(NULL.clone()),
+            }
+        }
+    } else {
+        Err(Error::msg(format!("Unknown expression type: {}", expression)))
+    }
+}
+
+fn eval_infix_expression(operator: String, left: &Expression, right: &Expression) -> Result<Object> {
     let left = eval_expression(left)?;
     let right = eval_expression(right)?;
 
@@ -68,46 +102,61 @@ fn eval_infix_expression(operator: String, left: &Expression, right: &Expression
         (Object::String(left), Object::String(right)) => {
             eval_string_infix_expression(operator, left, right)
         }
-        _ => None,
+        _ => Err(Error::msg(format!(
+            "Unknown operator: {}",
+            operator
+        ))),
     }
 }
 
-fn eval_boolean_infix_expression(operator: String, left: bool, right: bool) -> Option<Object> {
+fn eval_boolean_infix_expression(operator: String, left: bool, right: bool) -> Result<Object> {
     match operator.as_str() {
-        "==" => Some(native_bool_to_bool_object(left == right)),
-        "!=" => Some(native_bool_to_bool_object(left != right)),
-        _ => None,
+        "==" => Ok(native_bool_to_bool_object(left == right)),
+        "!=" => Ok(native_bool_to_bool_object(left != right)),
+        _ => Err(Error::msg(format!(
+            "Unknown operator: {} {} {}",
+            left, operator, right
+        ))),
     }
 }
 
-fn eval_integer_infix_expression(operator: String, left: i64, right: i64) -> Option<Object> {
+fn eval_integer_infix_expression(operator: String, left: i64, right: i64) -> Result<Object> {
     match operator.as_str() {
-        "+" => Some(Object::Integer(left + right)),
-        "-" => Some(Object::Integer(left - right)),
-        "*" => Some(Object::Integer(left * right)),
-        "/" => Some(Object::Integer(left / right)),
-        "<" => Some(native_bool_to_bool_object(left < right)),
-        ">" => Some(native_bool_to_bool_object(left > right)),
-        "==" => Some(native_bool_to_bool_object(left == right)),
-        "!=" => Some(native_bool_to_bool_object(left != right)),
-        _ => None,
+        "+" => Ok(Object::Integer(left + right)),
+        "-" => Ok(Object::Integer(left - right)),
+        "*" => Ok(Object::Integer(left * right)),
+        "/" => Ok(Object::Integer(left / right)),
+        "<" => Ok(native_bool_to_bool_object(left < right)),
+        ">" => Ok(native_bool_to_bool_object(left > right)),
+        "==" => Ok(native_bool_to_bool_object(left == right)),
+        "!=" => Ok(native_bool_to_bool_object(left != right)),
+        _ => Err(Error::msg(format!(
+            "Unknown operator: {} {} {}",
+            left, operator, right
+        ))),
     }
 }
 
-fn eval_string_infix_expression(operator: String, left: String, right: String) -> Option<Object> {
+fn eval_string_infix_expression(operator: String, left: String, right: String) -> Result<Object> {
     match operator.as_str() {
-        "+" => Some(Object::String(format!("{}{}", left, right))),
-        _ => None,
+        "+" => Ok(Object::String(format!("{}{}", left, right))),
+        _ => Err(Error::msg(format!(
+            "Unknown operator: {} {} {}",
+            left, operator, right
+        ))),
     }
 }
 
-fn eval_prefix_expression(operator: String, right: &Expression) -> Option<Object> {
+fn eval_prefix_expression(operator: String, right: &Expression) -> Result<Object> {
     let right = eval_expression(right)?;
 
     match operator.as_str() {
-        "-" => Some(eval_minus_prefix_operator_expression(right)),
-        "!" => Some(eval_bang_operator_expression(right)),
-        _ => None,
+        "-" => Ok(eval_minus_prefix_operator_expression(right)),
+        "!" => Ok(eval_bang_operator_expression(right)),
+        _ => Err(Error::msg(format!(
+            "Unknown operator: {}{}",
+            operator, right
+        ))),
     }
 }
 
@@ -127,23 +176,23 @@ fn eval_minus_prefix_operator_expression(right: Object) -> Object {
     }
 }
 
-fn eval_statement(statement: &Statement) -> Option<Object> {
+fn eval_statement(statement: &Statement) -> Result<Object> {
     match statement {
         Statement::Expr(expression) => eval_expression(expression),
-        _ => None,
+        _ => Err(Error::msg(format!("Unknown statement type: {}", statement))),
     }
 }
 
-fn eval_identifier(_identifier: String) -> Option<Object> {
+fn eval_identifier(_identifier: String) -> Result<Object> {
     unimplemented!("eval_identifier");
 }
 
-fn eval_literal(literal: &Literal) -> Option<Object> {
+fn eval_literal(literal: &Literal) -> Result<Object> {
     match literal {
-        Literal::Integer(integer) => Some(Object::Integer(integer.value)),
-        Literal::Boolean(Boolean { value, .. }) => Some(Object::Boolean(*value)),
-        Literal::String(string) => Some(Object::String(string.value.clone())),
-        _ => None,
+        Literal::Integer(integer) => Ok(Object::Integer(integer.value)),
+        Literal::Boolean(Boolean { value, .. }) => Ok(Object::Boolean(*value)),
+        Literal::String(string) => Ok(Object::String(string.value.clone())),
+        _ => Err(Error::msg(format!("Unknown literal type: {}", literal))),
     }
 }
 
@@ -247,6 +296,31 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn test_eval_if_else_expressions() -> Result<(), Error> {
+        let tests = vec![
+            ("if (true) { 10 }", Some(10)),
+            ("if (false) { 10 }", None),
+            ("if (1) { 10 }", Some(10)),
+            ("if (1 < 2) { 10 }", Some(10)),
+            ("if (1 > 2) { 10 }", None),
+            ("if (1 > 2) { 10 } else { 20 }", Some(20)),
+            ("if (1 < 2) { 10 } else { 20 }", Some(10)),
+        ];
+
+        for (input, expected) in tests {
+            let evaluated = assert_eval(input)?;
+
+            if let Some(expected) = expected {
+                assert_integer_object(evaluated, expected)?;
+            } else {
+                assert_eq!(evaluated, *NULL);
+            }
+        }
+
+        Ok(())
+    }
+
     fn assert_eval(input: &str) -> Result<Object, Error> {
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
@@ -255,7 +329,7 @@ mod tests {
         parser.check_errors()?;
 
         let evaluated = eval_statements(&program.statements)
-            .ok_or_else(|| anyhow::anyhow!("eval returned None"))?;
+            .or_else(|_| Err(anyhow::anyhow!("eval returned None")))?;
 
         Ok(evaluated)
     }
