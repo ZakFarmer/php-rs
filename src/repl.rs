@@ -1,8 +1,10 @@
+use std::{sync::Arc, cell::RefCell};
+
 use anyhow::{Error, Result};
 
 use rustyline::error::ReadlineError;
 
-use crate::{evaluator, lexer::Lexer, parser::Parser};
+use crate::{evaluator, lexer::Lexer, parser::Parser, object::environment::Environment};
 
 const PROMPT: &str = ">> ";
 
@@ -20,6 +22,8 @@ pub fn init_repl() -> Result<(), Error> {
         env!("CARGO_PKG_VERSION")
     );
 
+    let env = Arc::new(RefCell::new(Environment::new()));
+
     loop {
         let readline = rl.readline(format!("{}", PROMPT).as_str());
 
@@ -33,7 +37,7 @@ pub fn init_repl() -> Result<(), Error> {
                 let program = parser.parse_program();
                 parser.check_errors()?;
 
-                let evaluation = evaluator::eval_statements(&program.statements);
+                let evaluation = evaluator::eval_statements(&program.statements, &env);
 
                 if let Ok(evaluated) = evaluation {
                     println!("{}", evaluated);

@@ -331,6 +331,14 @@ impl<'a> Parser<'a> {
                     None
                 }
             }
+            Some(token) if token.token_type == TokenType::Semicolon => {
+                let identifier = Identifier {
+                    token: name_token.clone(),
+                    value: name_token.literal.clone(),
+                };
+
+                Some(Statement::Expr(Expression::Identifier(identifier)))
+            }
             Some(token) => {
                 self.errors
                     .push(format!("Expected = or ;, got {:?}", token));

@@ -1,4 +1,8 @@
+use std::sync::Arc;
+
 use crate::ast::BlockStatement;
+
+pub mod environment;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Object {
@@ -6,7 +10,7 @@ pub enum Object {
     Boolean(bool),
     String(String),
     Function(Vec<String>, BlockStatement),
-    Return(Box<Object>),
+    Return(Arc<Object>),
     Null,
 }
 
