@@ -6,11 +6,11 @@ use repl::init_repl;
 mod ast;
 mod evaluator;
 mod lexer;
+mod object;
 mod parser;
 mod repl;
 mod string;
 mod token;
-mod object;
 
 pub const NAME: &str = env!("CARGO_PKG_NAME");
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -38,7 +38,7 @@ fn main() -> Result<(), Error> {
         let lexer = lexer::Lexer::new(&file);
         let mut parser = parser::Parser::new(lexer);
 
-        let program = parser.parse_program();
+        let program = parser.parse_program()?;
 
         parser.check_errors()?;
 

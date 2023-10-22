@@ -1,11 +1,18 @@
-use crate::ast::BlockStatement;
+use std::rc::Rc;
 
+use crate::ast::{BlockStatement, Identifier};
+
+use self::environment::Env;
+
+pub mod environment;
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum Object {
     Integer(i64),
     Boolean(bool),
     String(String),
-    Function(Vec<String>, BlockStatement),
-    Return(Box<Object>),
+    Function(Vec<Identifier>, BlockStatement, Env),
+    Return(Rc<Object>),
     Null,
 }
 
@@ -15,11 +22,11 @@ impl std::fmt::Display for Object {
             Object::Integer(integer) => write!(f, "{}", integer),
             Object::Boolean(boolean) => write!(f, "{}", boolean),
             Object::String(string) => write!(f, "{}", string),
-            Object::Function(parameters, body) => {
+            Object::Function(parameters, body, _env) => {
                 let mut parameters_string = String::new();
 
                 for (index, parameter) in parameters.iter().enumerate() {
-                    parameters_string.push_str(parameter);
+                    parameters_string.push_str(&parameter.to_string());
 
                     if index < parameters.len() - 1 {
                         parameters_string.push_str(", ");
@@ -27,7 +34,7 @@ impl std::fmt::Display for Object {
                 }
 
                 write!(f, "fn({}) {{\n{}\n}}", parameters_string, body)
-            },
+            }
             Object::Return(value) => write!(f, "{}", value),
             Object::Null => write!(f, "null"),
         }

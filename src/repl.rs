@@ -1,8 +1,10 @@
+use std::{cell::RefCell, rc::Rc};
+
 use anyhow::{Error, Result};
 
 use rustyline::error::ReadlineError;
 
-use crate::{lexer::Lexer, parser::Parser, evaluator};
+use crate::{evaluator, lexer::Lexer, parser::Parser, object::environment::Environment};
 
 const PROMPT: &str = ">> ";
 
@@ -20,6 +22,8 @@ pub fn init_repl() -> Result<(), Error> {
         env!("CARGO_PKG_VERSION")
     );
 
+    let env = Rc::new(RefCell::new(Environment::new()));
+
     loop {
         let readline = rl.readline(format!("{}", PROMPT).as_str());
 
@@ -30,14 +34,12 @@ pub fn init_repl() -> Result<(), Error> {
                 let lexer = Lexer::new(&line);
                 let mut parser = Parser::new(lexer);
 
-                let program = parser.parse_program();
+                let program = parser.parse_program()?;
                 parser.check_errors()?;
 
-                let evaluation = evaluator::eval_statements(&program.statements);
+                let evaluated = evaluator::eval_statements(&program.statements, &env)?;
 
-                if let Some(evaluated) = evaluation {
-                    println!("{}", evaluated);
-                }
+                println!("{}", evaluated);
             }
             Err(ReadlineError::Interrupted) => {
                 println!("CTRL-C");
