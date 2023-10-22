@@ -375,7 +375,34 @@ mod tests {
 
         for (input, expected) in tests {
             let evaluated = assert_eval(input)?;
-            assert_integer_object(evaluated, expected)?;
+            assert_integer_literal_object(evaluated, expected)?;
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_eval_string_expressions() -> Result<(), Error> {
+        let tests = vec![("\"Hello World!\"", "Hello World!")];
+
+        for (input, expected) in tests {
+            let evaluated = assert_eval(input)?;
+            assert_string_literal_object(evaluated, expected)?;
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_eval_string_concatenations() -> Result<(), Error> {
+        let tests = vec![
+            ("\"Hello\" + \" \" + \"World!\"", "Hello World!"),
+            ("\"Hello\" + \"World!\"", "HelloWorld!"),
+        ];
+
+        for (input, expected) in tests {
+            let evaluated = assert_eval(input)?;
+            assert_string_literal_object(evaluated, expected)?;
         }
 
         Ok(())
@@ -414,7 +441,7 @@ mod tests {
             let evaluated = assert_eval(input)?;
 
             if let Some(expected) = expected {
-                assert_integer_object(evaluated, expected)?;
+                assert_integer_literal_object(evaluated, expected)?;
             } else {
                 assert_eq!(*evaluated, Object::Null);
             }
@@ -434,9 +461,7 @@ mod tests {
         for (input, expected) in tests {
             let evaluated = assert_eval(input)?;
 
-            dbg!(&evaluated);
-
-            assert_integer_object(evaluated, expected)?;
+            assert_integer_literal_object(evaluated, expected)?;
         }
 
         Ok(())
@@ -449,8 +474,7 @@ mod tests {
         for (input, expected) in tests {
             let evaluated = assert_eval(input)?;
 
-            dbg!(&evaluated);
-            assert_integer_object(evaluated, expected)?;
+            assert_integer_literal_object(evaluated, expected)?;
         }
 
         Ok(())
@@ -474,19 +498,29 @@ mod tests {
         if let Object::Boolean(boolean) = *object {
             assert_eq!(boolean, expected);
         } else {
-            return Err(anyhow::anyhow!("Object is not a Boolean."));
+            return Err(Error::msg("Object is not a Boolean."));
         }
 
         Ok(())
     }
 
-    fn assert_integer_object(object: Rc<Object>, expected: i64) -> Result<(), Error> {
+    fn assert_integer_literal_object(object: Rc<Object>, expected: i64) -> Result<(), Error> {
         if let Object::Integer(integer) = *object {
             assert_eq!(integer, expected);
         } else {
-            return Err(anyhow::anyhow!("Object is not an Integer."));
+            return Err(Error::msg("Object is not an Integer."));
         }
 
         Ok(())
     }
+
+    fn assert_string_literal_object(object: Rc<Object>, expected: &str) -> Result<(), Error> {
+        // Dereference the Rc<Object> to get an Object and then reference it again for pattern matching.
+        match &*object {
+            Object::String(string) if string == expected => Ok(()),
+            Object::String(_) => Err(anyhow::anyhow!("String value does not match expected value.")),
+            _ => Err(Error::msg("Object is not a String.")),
+        }
+    }
+    
 }
