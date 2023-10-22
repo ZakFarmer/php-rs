@@ -196,6 +196,14 @@ impl From<u8> for Opcode {
     }
 }
 
+impl std::fmt::Display for Opcode {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let definition = lookup(*self);
+
+        write!(f, "{}", definition.name)
+    }
+}
+
 pub fn read_operands(def: &OpcodeDefinition, ins: &[u8]) -> (Vec<usize>, usize) {
     let mut operands = Vec::with_capacity(def.operand_widths.len());
     let mut offset = 0;

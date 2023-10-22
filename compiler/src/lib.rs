@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
 use anyhow::Error;
+use opcode::Opcode;
 use parser::ast::{Expression, IntegerLiteral, Literal, Node, Statement};
 
 pub struct Bytecode {
@@ -76,6 +77,8 @@ impl Compiler {
             Statement::Expr(e) => {
                 self.compile_expression(e)?;
 
+                self.emit(Opcode::OpPop, vec![]);
+                
                 return Ok(());
             }
             _ => {

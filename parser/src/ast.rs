@@ -19,6 +19,7 @@ impl std::fmt::Display for Node {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Literal {
     Integer(IntegerLiteral),
+    Float(FloatLiteral),
     Boolean(BooleanLiteral),
     String(StringLiteral),
     Array(ArrayLiteral),
@@ -30,6 +31,7 @@ impl std::fmt::Display for Literal {
             Literal::Integer(IntegerLiteral { token: _, value }) => write!(f, "{}", value),
             Literal::Boolean(BooleanLiteral { token: _, value }) => write!(f, "{}", value),
             Literal::String(StringLiteral { token: _, value }) => write!(f, "{}", value),
+            Literal::Float(FloatLiteral { token: _, value }) => write!(f, "{}", value),
             Literal::Array(ArrayLiteral { token: _, elements }) => {
                 let mut elements_string = String::new();
 
@@ -187,6 +189,12 @@ pub struct BooleanLiteral {
 pub struct IntegerLiteral {
     pub token: Token,
     pub value: i64,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct FloatLiteral {
+    pub token: Token,
+    pub value: f64,
 }
 
 #[derive(Clone, Debug, PartialEq)]

@@ -2,10 +2,12 @@ use std::{cell::RefCell, rc::Rc};
 
 use anyhow::{Error, Result};
 
+use compiler::Compiler;
 use lexer::Lexer;
 use object::environment::Environment;
-use parser::Parser;
+use parser::{Parser, ast::Node};
 use rustyline::error::ReadlineError;
+use vm::Vm;
 
 const PROMPT: &str = ">> ";
 
@@ -19,8 +21,6 @@ pub fn init_repl() -> Result<(), Error> {
 
     println!("php-rs interpreter v{}", env!("CARGO_PKG_VERSION"));
 
-    let env = Rc::new(RefCell::new(Environment::new()));
-
     loop {
         let readline = rl.readline(format!("{}", PROMPT).as_str());
 
@@ -33,12 +33,19 @@ pub fn init_repl() -> Result<(), Error> {
                     let mut parser = Parser::new(lexer);
 
                     let program = parser.parse_program()?;
-
                     parser.check_errors()?;
 
-                    let evaluated = evaluator::eval_statements(&program.statements, &env)?;
+                    let mut compiler = Compiler::new();
 
-                    println!("{}", evaluated);
+                    compiler.compile(&Node::Program(program))?;
+
+                    let mut vm = Vm::new(compiler.bytecode());
+
+                    vm.run()?;
+
+                    let last_popped = vm.last_popped_stack_elem();
+                    println!("{}", last_popped);
+
                     Ok(())
                 })();
 
