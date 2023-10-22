@@ -38,7 +38,7 @@ fn main() -> Result<(), Error> {
         let lexer = lexer::Lexer::new(&file);
         let mut parser = parser::Parser::new(lexer);
 
-        let program = parser.parse_program();
+        let program = parser.parse_program()?;
 
         parser.check_errors()?;
 

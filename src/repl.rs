@@ -1,4 +1,4 @@
-use std::{sync::Arc, cell::RefCell};
+use std::{cell::RefCell, rc::Rc};
 
 use anyhow::{Error, Result};
 
@@ -22,7 +22,7 @@ pub fn init_repl() -> Result<(), Error> {
         env!("CARGO_PKG_VERSION")
     );
 
-    let env = Arc::new(RefCell::new(Environment::new()));
+    let env = Rc::new(RefCell::new(Environment::new()));
 
     loop {
         let readline = rl.readline(format!("{}", PROMPT).as_str());
@@ -34,14 +34,12 @@ pub fn init_repl() -> Result<(), Error> {
                 let lexer = Lexer::new(&line);
                 let mut parser = Parser::new(lexer);
 
-                let program = parser.parse_program();
+                let program = parser.parse_program()?;
                 parser.check_errors()?;
 
-                let evaluation = evaluator::eval_statements(&program.statements, &env);
+                let evaluated = evaluator::eval_statements(&program.statements, &env)?;
 
-                if let Ok(evaluated) = evaluation {
-                    println!("{}", evaluated);
-                }
+                println!("{}", evaluated);
             }
             Err(ReadlineError::Interrupted) => {
                 println!("CTRL-C");

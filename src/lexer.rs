@@ -53,7 +53,25 @@ impl<'a> Lexer<'a> {
             Some('*') => (TokenType::Asterisk, "*".to_string()),
             Some('<') => (TokenType::Lt, "<".to_string()),
             Some('>') => (TokenType::Gt, ">".to_string()),
-            Some('$') => (TokenType::Dollar, "$".to_string()),
+            Some('$') => {
+                self.read_char();
+    
+                if let Some(ch) = self.ch {
+                    if ch.is_alphabetic() || ch == '_' {
+                        let identifier = self.read_identifier();
+                        let var_name = format!("${}", identifier);
+    
+                        return Token {
+                            token_type: TokenType::Ident,
+                            literal: var_name,
+                        };
+                    } else {
+                        (TokenType::Illegal, "$".to_string())
+                    }
+                } else {
+                    (TokenType::Illegal, "$".to_string())
+                }
+            }
             Some(ch) => {
                 if ch.is_alphabetic() {
                     let literal = self.read_identifier();
@@ -152,24 +170,20 @@ mod tests {
         let input = "
             $five = 5;
 
-            $ten = five + 5;
+            $ten = $five + 5;
 
-            $add = function (x, y) {
-                return x + y;
+            $add = function ($x, $y) {
+                return $x + $y;
             }
 
-            $result = add(five, ten);
+            $result = $add($five, $ten);
         "
         .to_string();
 
         let expected_tokens = [
             Token {
-                token_type: TokenType::Dollar,
-                literal: "$".to_string(),
-            },
-            Token {
                 token_type: TokenType::Ident,
-                literal: "five".to_string(),
+                literal: "$five".to_string(),
             },
             Token {
                 token_type: TokenType::Assign,
@@ -184,12 +198,8 @@ mod tests {
                 literal: ";".to_string(),
             },
             Token {
-                token_type: TokenType::Dollar,
-                literal: "$".to_string(),
-            },
-            Token {
                 token_type: TokenType::Ident,
-                literal: "ten".to_string(),
+                literal: "$ten".to_string(),
             },
             Token {
                 token_type: TokenType::Assign,
@@ -197,7 +207,7 @@ mod tests {
             },
             Token {
                 token_type: TokenType::Ident,
-                literal: "five".to_string(),
+                literal: "$five".to_string(),
             },
             Token {
                 token_type: TokenType::Plus,
@@ -212,12 +222,8 @@ mod tests {
                 literal: ";".to_string(),
             },
             Token {
-                token_type: TokenType::Dollar,
-                literal: "$".to_string(),
-            },
-            Token {
                 token_type: TokenType::Ident,
-                literal: "add".to_string(),
+                literal: "$add".to_string(),
             },
             Token {
                 token_type: TokenType::Assign,
@@ -233,7 +239,7 @@ mod tests {
             },
             Token {
                 token_type: TokenType::Ident,
-                literal: "x".to_string(),
+                literal: "$x".to_string(),
             },
             Token {
                 token_type: TokenType::Comma,
@@ -241,7 +247,7 @@ mod tests {
             },
             Token {
                 token_type: TokenType::Ident,
-                literal: "y".to_string(),
+                literal: "$y".to_string(),
             },
             Token {
                 token_type: TokenType::RParen,
@@ -257,7 +263,7 @@ mod tests {
             },
             Token {
                 token_type: TokenType::Ident,
-                literal: "x".to_string(),
+                literal: "$x".to_string(),
             },
             Token {
                 token_type: TokenType::Plus,
@@ -265,7 +271,7 @@ mod tests {
             },
             Token {
                 token_type: TokenType::Ident,
-                literal: "y".to_string(),
+                literal: "$y".to_string(),
             },
             Token {
                 token_type: TokenType::Semicolon,
@@ -276,12 +282,8 @@ mod tests {
                 literal: "}".to_string(),
             },
             Token {
-                token_type: TokenType::Dollar,
-                literal: "$".to_string(),
-            },
-            Token {
                 token_type: TokenType::Ident,
-                literal: "result".to_string(),
+                literal: "$result".to_string(),
             },
             Token {
                 token_type: TokenType::Assign,
@@ -289,7 +291,7 @@ mod tests {
             },
             Token {
                 token_type: TokenType::Ident,
-                literal: "add".to_string(),
+                literal: "$add".to_string(),
             },
             Token {
                 token_type: TokenType::LParen,
@@ -297,7 +299,7 @@ mod tests {
             },
             Token {
                 token_type: TokenType::Ident,
-                literal: "five".to_string(),
+                literal: "$five".to_string(),
             },
             Token {
                 token_type: TokenType::Comma,
@@ -305,7 +307,7 @@ mod tests {
             },
             Token {
                 token_type: TokenType::Ident,
-                literal: "ten".to_string(),
+                literal: "$ten".to_string(),
             },
             Token {
                 token_type: TokenType::RParen,

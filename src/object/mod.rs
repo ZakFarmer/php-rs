@@ -1,6 +1,8 @@
-use std::sync::Arc;
+use std::rc::Rc;
 
-use crate::ast::BlockStatement;
+use crate::ast::{BlockStatement, Identifier};
+
+use self::environment::Env;
 
 pub mod environment;
 
@@ -9,8 +11,8 @@ pub enum Object {
     Integer(i64),
     Boolean(bool),
     String(String),
-    Function(Vec<String>, BlockStatement),
-    Return(Arc<Object>),
+    Function(Vec<Identifier>, BlockStatement, Env),
+    Return(Rc<Object>),
     Null,
 }
 
@@ -20,11 +22,11 @@ impl std::fmt::Display for Object {
             Object::Integer(integer) => write!(f, "{}", integer),
             Object::Boolean(boolean) => write!(f, "{}", boolean),
             Object::String(string) => write!(f, "{}", string),
-            Object::Function(parameters, body) => {
+            Object::Function(parameters, body, _env) => {
                 let mut parameters_string = String::new();
 
                 for (index, parameter) in parameters.iter().enumerate() {
-                    parameters_string.push_str(parameter);
+                    parameters_string.push_str(&parameter.to_string());
 
                     if index < parameters.len() - 1 {
                         parameters_string.push_str(", ");
