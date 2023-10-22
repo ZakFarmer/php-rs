@@ -30,6 +30,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4682ae6287fcf752ecaabbfcc7b6f9b72aa33933dc23a554d853aea8eea8635"
 
 [[package]]
+name = "byteorder"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fd0f2584146f6f2ef48085050886acf353beff7305ebd1ae69500e27c67f64b"
+
+[[package]]
 name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -44,6 +50,20 @@ dependencies = [
  "error-code",
  "str-buf",
  "winapi",
+]
+
+[[package]]
+name = "compiler"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "env_logger",
+ "lazy_static",
+ "lexer",
+ "log",
+ "object",
+ "opcode",
+ "parser",
 ]
 
 [[package]]
@@ -222,6 +242,17 @@ dependencies = [
  "env_logger",
  "log",
  "parser",
+]
+
+[[package]]
+name = "opcode"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "byteorder",
+ "env_logger",
+ "lazy_static",
+ "log",
 ]
 
 [[package]]
