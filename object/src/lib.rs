@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::ast::{BlockStatement, Identifier};
+use parser::ast::{BlockStatement, Identifier};
 
 use self::environment::Env;
 

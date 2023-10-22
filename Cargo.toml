@@ -1,14 +1,2 @@
-[package]
-name = "php"
-version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-anyhow = "1.0.75"
-env_logger = "0.10.0"
-lazy_static = "1.4.0"
-log = "0.4.20"
-phf = { version = "0.11.2", features = ["macros"] }
-rustyline = { version = "12.0.0", features = ["with-file-history"] }
+[workspace]
+members = [    "lexer",    "parser",    "evaluator",    "object",    "interpreter"]

@@ -1,4 +1,4 @@
-use crate::token::Token;
+use lexer::token::Token;
 
 pub enum Node {
     Expression(Expression),

@@ -2,9 +2,10 @@ use std::{cell::RefCell, rc::Rc};
 
 use anyhow::{Error, Result};
 
+use lexer::Lexer;
+use object::environment::Environment;
+use parser::Parser;
 use rustyline::error::ReadlineError;
-
-use crate::{evaluator, lexer::Lexer, object::environment::Environment, parser::Parser};
 
 const PROMPT: &str = ">> ";
 
@@ -17,8 +18,7 @@ pub fn init_repl() -> Result<(), Error> {
     }
 
     println!(
-        "{} interpreter v{}",
-        env!("CARGO_PKG_NAME"),
+        "php-rs interpreter v{}",
         env!("CARGO_PKG_VERSION")
     );
 

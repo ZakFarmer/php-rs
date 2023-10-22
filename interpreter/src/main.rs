@@ -1,16 +1,9 @@
 use std::env;
 
+mod repl;
+
 use anyhow::{Error, Result};
 use repl::init_repl;
-
-mod ast;
-mod evaluator;
-mod lexer;
-mod object;
-mod parser;
-mod repl;
-mod string;
-mod token;
 
 pub const NAME: &str = env!("CARGO_PKG_NAME");
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
