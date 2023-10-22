@@ -28,6 +28,8 @@ pub enum TokenType {
     Gt,
     Bang,
 
+    String,
+
     If,
     Else,
     Return,
@@ -89,6 +91,7 @@ impl std::fmt::Display for TokenType {
             TokenType::If => "If",
             TokenType::Else => "Else",
             TokenType::Return => "Return",
+            TokenType::String => "String",
         };
 
         write!(f, "{}", token_type)

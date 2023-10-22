@@ -7,7 +7,7 @@ use crate::{
     ast::{
         Assignment, BlockStatement, Boolean, CallExpression, Expression, FunctionLiteral,
         Identifier, IfExpression, InfixExpression, Integer, Literal, PrefixExpression,
-        Program, ReturnStatement, Statement,
+        Program, ReturnStatement, Statement, StringLiteral,
     },
     lexer::Lexer,
     token::{Token, TokenType},
@@ -116,8 +116,13 @@ impl<'a> Parser<'a> {
         parser.register_prefix(TokenType::If, |p| Parser::parse_if_expression(p));
         parser.register_prefix(TokenType::Bang, |p| Parser::parse_prefix_expression(p));
         parser.register_prefix(TokenType::Minus, |p| Parser::parse_prefix_expression(p));
+        
         parser.register_prefix(TokenType::Dollar, |p| {
             Parser::parse_variable_reference_expression(p)
+        });
+
+        parser.register_prefix(TokenType::String, |p| {
+            Parser::parse_string_literal(p)
         });
 
         parser.register_infix(TokenType::LParen, |p, left| {
@@ -209,6 +214,17 @@ impl<'a> Parser<'a> {
         };
 
         Ok(Expression::Literal(Literal::Boolean(Boolean {
+            token: current_token,
+            value,
+        })))
+    }
+
+    fn parse_string_literal(&mut self) -> Result<Expression> {
+        let current_token = self.current_token.clone().unwrap();
+
+        let value = self.current_token.as_ref().unwrap().to_string();
+
+        Ok(Expression::Literal(Literal::String(StringLiteral {
             token: current_token,
             value,
         })))
@@ -992,7 +1008,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parsing_prefix_expressions() -> Result<(), Error> {
+    fn test_prefix_expressions() -> Result<(), Error> {
         let prefix_tests: [(&str, &str, i64); 2] = [("!5;", "!", 5), ("-15;", "-", 15)];
 
         for (input, _operator, value) in prefix_tests.iter() {
@@ -1014,13 +1030,34 @@ mod tests {
         Ok(())
     }
 
-    fn assert_boolean_literal(expression: Expression, value: bool) -> Result<(), Error> {
+    #[test]
+    fn test_strings() -> Result<(), Error> {
+        let input = r#""hello world";"#;
+
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+
+        let program = parser.parse_program()?;
+        parser.check_errors()?;
+
+        assert_eq!(1, program.statements.len());
+
+        if let Statement::Expr(expression) = &program.statements[0] {
+            assert_string_literal(&expression, "hello world")?;
+        } else {
+            assert!(false, "Expected ExpressionStatement");
+        }
+
+        Ok(())
+    }
+
+    fn assert_string_literal(expression: &Expression, value: &str) -> Result<(), Error> {
         match expression {
-            Expression::Literal(Literal::Boolean(boolean)) => {
-                assert_eq!(value, boolean.value);
+            Expression::Literal(Literal::String(string_literal)) => {
+                assert_eq!(value, string_literal.value);
             }
             _ => {
-                assert!(false, "Expected BooleanLiteral");
+                assert!(false, "Expected StringLiteral");
             }
         }
 

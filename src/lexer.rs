@@ -33,6 +33,13 @@ impl<'a> Lexer<'a> {
                     (TokenType::Assign, "=".to_string())
                 }
             }
+            Some('"') => {
+                self.read_char();
+
+                let literal = self.read_string();
+
+                (TokenType::String, literal)
+            }
             Some(';') => (TokenType::Semicolon, ";".to_string()),
             Some('(') => (TokenType::LParen, "(".to_string()),
             Some(')') => (TokenType::RParen, ")".to_string()),
@@ -139,6 +146,19 @@ impl<'a> Lexer<'a> {
 
         while match self.ch {
             Some(ch) => ch.is_numeric(),
+            _ => false,
+        } {
+            self.read_char();
+        }
+
+        self.input[position..self.position].to_owned()
+    }
+
+    fn read_string(&mut self) -> String {
+        let position = self.position;
+
+        while match self.ch {
+            Some(ch) => ch != '"',
             _ => false,
         } {
             self.read_char();

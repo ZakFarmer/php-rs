@@ -31,15 +31,25 @@ pub fn init_repl() -> Result<(), Error> {
             Ok(line) => {
                 rl.add_history_entry(line.as_str())?;
 
-                let lexer = Lexer::new(&line);
-                let mut parser = Parser::new(lexer);
+                let result: Result<(), Error> = (|| {
+                    let lexer = Lexer::new(&line);
+                    let mut parser = Parser::new(lexer);
 
-                let program = parser.parse_program()?;
-                parser.check_errors()?;
+                    let program = parser.parse_program()?;
 
-                let evaluated = evaluator::eval_statements(&program.statements, &env)?;
+                    dbg!(&program);
 
-                println!("{}", evaluated);
+                    parser.check_errors()?;
+
+                    let evaluated = evaluator::eval_statements(&program.statements, &env)?;
+
+                    println!("{}", evaluated);
+                    Ok(())
+                })();
+
+                if let Err(e) = result {
+                    println!("Error: {}", e);
+                }
             }
             Err(ReadlineError::Interrupted) => {
                 println!("CTRL-C");
@@ -51,7 +61,6 @@ pub fn init_repl() -> Result<(), Error> {
             }
             Err(err) => {
                 println!("Error: {:?}", err);
-                break;
             }
         }
     }
