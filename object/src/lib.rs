@@ -1,6 +1,6 @@
 use std::rc::Rc;
 
-use crate::ast::{BlockStatement, Identifier};
+use parser::ast::{BlockStatement, Identifier};
 
 use self::environment::Env;
 
@@ -13,6 +13,7 @@ pub enum Object {
     String(String),
     Function(Vec<Identifier>, BlockStatement, Env),
     Return(Rc<Object>),
+    Array(Vec<Rc<Object>>),
     Null,
 }
 
@@ -34,6 +35,19 @@ impl std::fmt::Display for Object {
                 }
 
                 write!(f, "fn({}) {{\n{}\n}}", parameters_string, body)
+            }
+            Object::Array(elements) => {
+                let mut elements_string = String::new();
+
+                for (index, element) in elements.iter().enumerate() {
+                    elements_string.push_str(&element.to_string());
+
+                    if index < elements.len() - 1 {
+                        elements_string.push_str(", ");
+                    }
+                }
+
+                write!(f, "[{}]", elements_string)
             }
             Object::Return(value) => write!(f, "{}", value),
             Object::Null => write!(f, "null"),

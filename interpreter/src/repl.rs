@@ -2,9 +2,10 @@ use std::{cell::RefCell, rc::Rc};
 
 use anyhow::{Error, Result};
 
+use lexer::Lexer;
+use object::environment::Environment;
+use parser::Parser;
 use rustyline::error::ReadlineError;
-
-use crate::{evaluator, lexer::Lexer, parser::Parser, object::environment::Environment};
 
 const PROMPT: &str = ">> ";
 
@@ -16,11 +17,7 @@ pub fn init_repl() -> Result<(), Error> {
         info!("No previous history.");
     }
 
-    println!(
-        "{} interpreter v{}",
-        env!("CARGO_PKG_NAME"),
-        env!("CARGO_PKG_VERSION")
-    );
+    println!("php-rs interpreter v{}", env!("CARGO_PKG_VERSION"));
 
     let env = Rc::new(RefCell::new(Environment::new()));
 
@@ -31,15 +28,23 @@ pub fn init_repl() -> Result<(), Error> {
             Ok(line) => {
                 rl.add_history_entry(line.as_str())?;
 
-                let lexer = Lexer::new(&line);
-                let mut parser = Parser::new(lexer);
+                let result: Result<(), Error> = (|| {
+                    let lexer = Lexer::new(&line);
+                    let mut parser = Parser::new(lexer);
 
-                let program = parser.parse_program()?;
-                parser.check_errors()?;
+                    let program = parser.parse_program()?;
 
-                let evaluated = evaluator::eval_statements(&program.statements, &env)?;
+                    parser.check_errors()?;
 
-                println!("{}", evaluated);
+                    let evaluated = evaluator::eval_statements(&program.statements, &env)?;
+
+                    println!("{}", evaluated);
+                    Ok(())
+                })();
+
+                if let Err(e) = result {
+                    println!("Error: {}", e);
+                }
             }
             Err(ReadlineError::Interrupted) => {
                 println!("CTRL-C");
@@ -51,7 +56,6 @@ pub fn init_repl() -> Result<(), Error> {
             }
             Err(err) => {
                 println!("Error: {:?}", err);
-                break;
             }
         }
     }

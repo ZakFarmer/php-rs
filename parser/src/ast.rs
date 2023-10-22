@@ -1,4 +1,4 @@
-use crate::token::Token;
+use lexer::token::Token;
 
 pub enum Node {
     Expression(Expression),
@@ -18,17 +18,31 @@ impl std::fmt::Display for Node {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Literal {
-    Integer(Integer),
-    Boolean(Boolean),
+    Integer(IntegerLiteral),
+    Boolean(BooleanLiteral),
     String(StringLiteral),
+    Array(ArrayLiteral),
 }
 
 impl std::fmt::Display for Literal {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Literal::Integer(Integer { token: _, value }) => write!(f, "{}", value),
-            Literal::Boolean(Boolean { token: _, value }) => write!(f, "{}", value),
+            Literal::Integer(IntegerLiteral { token: _, value }) => write!(f, "{}", value),
+            Literal::Boolean(BooleanLiteral { token: _, value }) => write!(f, "{}", value),
             Literal::String(StringLiteral { token: _, value }) => write!(f, "{}", value),
+            Literal::Array(ArrayLiteral { token: _, elements }) => {
+                let mut elements_string = String::new();
+
+                for (index, element) in elements.iter().enumerate() {
+                    elements_string.push_str(&format!("{}", element));
+
+                    if index < elements.len() - 1 {
+                        elements_string.push_str(", ");
+                    }
+                }
+
+                write!(f, "[{}]", elements_string)
+            }
         }
     }
 }
@@ -42,6 +56,7 @@ pub enum Expression {
     If(IfExpression),
     Function(FunctionLiteral),
     Call(CallExpression),
+    Index(IndexExpression),
 }
 
 impl std::fmt::Display for Expression {
@@ -49,6 +64,11 @@ impl std::fmt::Display for Expression {
         match self {
             Expression::Identifier(identifier) => write!(f, "{}", identifier),
             Expression::Literal(literal) => write!(f, "{}", literal),
+            Expression::Index(IndexExpression {
+                token: _,
+                left,
+                index,
+            }) => write!(f, "({}[{}])", left, index),
             Expression::Infix(InfixExpression {
                 token: _,
                 left,
@@ -158,13 +178,13 @@ impl std::fmt::Display for Program {
 
 // LITERALS
 #[derive(Clone, Debug, PartialEq)]
-pub struct Boolean {
+pub struct BooleanLiteral {
     pub token: Token,
     pub value: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Integer {
+pub struct IntegerLiteral {
     pub token: Token,
     pub value: i64,
 }
@@ -173,6 +193,12 @@ pub struct Integer {
 pub struct StringLiteral {
     pub token: Token,
     pub value: String,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ArrayLiteral {
+    pub token: Token,
+    pub elements: Vec<Expression>,
 }
 
 // EXPRESSIONS
@@ -208,6 +234,13 @@ pub struct IfExpression {
     pub condition: Box<Expression>,
     pub consequence: BlockStatement,
     pub alternative: Option<BlockStatement>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct IndexExpression {
+    pub token: Token,
+    pub left: Box<Expression>,
+    pub index: Box<Expression>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
