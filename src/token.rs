@@ -28,6 +28,9 @@ pub enum TokenType {
     Gt,
     Bang,
 
+    LBracket,
+    RBracket,
+
     String,
 
     If,
@@ -78,6 +81,8 @@ impl std::fmt::Display for TokenType {
             TokenType::Semicolon => "Semicolon",
             TokenType::LParen => "LParen",
             TokenType::RParen => "RParen",
+            TokenType::LBracket => "LBracket",
+            TokenType::RBracket => "RBracket",
             TokenType::LBrace => "LBrace",
             TokenType::RBrace => "RBrace",
             TokenType::Function => "Function",

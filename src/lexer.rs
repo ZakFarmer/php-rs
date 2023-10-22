@@ -47,6 +47,8 @@ impl<'a> Lexer<'a> {
             Some('+') => (TokenType::Plus, "+".to_string()),
             Some('{') => (TokenType::LBrace, "{".to_string()),
             Some('}') => (TokenType::RBrace, "}".to_string()),
+            Some('[') => (TokenType::LBracket, "[".to_string()),
+            Some(']') => (TokenType::RBracket, "]".to_string()),
             Some('-') => (TokenType::Minus, "-".to_string()),
             Some('!') => {
                 if self.peek_char() == '=' {

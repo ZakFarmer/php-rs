@@ -4,8 +4,8 @@ use anyhow::{Error, Ok, Result};
 
 use crate::{
     ast::{
-        Boolean, CallExpression, Expression, FunctionLiteral, IfExpression, Literal, Node,
-        Statement,
+        BooleanLiteral, CallExpression, Expression, FunctionLiteral, IfExpression, Literal, Node,
+        Statement, ArrayLiteral,
     },
     object::{
         environment::{Env, Environment},
@@ -73,7 +73,7 @@ fn eval_expression(expression: &Expression, env: &Env) -> Result<Rc<Object>> {
         Expression::Identifier(identifier_expression) => {
             eval_identifier(identifier_expression.to_string(), env)
         }
-        Expression::Literal(literal) => eval_literal(&literal),
+        Expression::Literal(literal) => eval_literal(&literal, env),
         Expression::Infix(infix_expression) => {
             let left = eval_expression(&infix_expression.left, &Rc::clone(env))?;
             let right = eval_expression(&infix_expression.right, &Rc::clone(env))?;
@@ -280,11 +280,16 @@ fn eval_identifier(identifier: String, env: &Env) -> Result<Rc<Object>> {
     }
 }
 
-fn eval_literal(literal: &Literal) -> Result<Rc<Object>> {
+fn eval_literal(literal: &Literal, env: &Env) -> Result<Rc<Object>> {
     let result = match literal {
         Literal::Integer(integer) => Object::Integer(integer.value),
-        Literal::Boolean(Boolean { value, .. }) => Object::Boolean(*value),
+        Literal::Boolean(BooleanLiteral { value, .. }) => Object::Boolean(*value),
         Literal::String(string) => Object::String(string.value.clone()),
+        Literal::Array(ArrayLiteral { elements, ..}) => {
+            let elements = eval_expressions(elements, env)?;
+
+            return Ok(Rc::from(Object::Array(elements)));
+        }
         _ => return Err(Error::msg(format!("Unknown literal type: {}", literal))),
     };
 
@@ -403,6 +408,30 @@ mod tests {
         for (input, expected) in tests {
             let evaluated = assert_eval(input)?;
             assert_string_literal_object(evaluated, expected)?;
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_eval_arrays() -> Result<(), Error> {
+        let tests = vec![
+            ("[1, 2, 3]", vec![1, 2, 3]),
+            ("[1 + 2, 3 * 4, 5 + 6]", vec![3, 12, 11]),
+        ];
+
+        for (input, expected) in tests {
+            let evaluated = assert_eval(input)?;
+
+            if let Object::Array(elements) = &* evaluated {
+                assert_eq!(elements.len(), expected.len());
+
+                for (index, element) in elements.iter().enumerate() {
+                    assert_integer_literal_object(Rc::clone(element), expected[index])?;
+                }
+            } else {
+                return Err(Error::msg("Object is not an Array."));
+            }
         }
 
         Ok(())

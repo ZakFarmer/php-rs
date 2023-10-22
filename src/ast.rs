@@ -18,17 +18,31 @@ impl std::fmt::Display for Node {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Literal {
-    Integer(Integer),
-    Boolean(Boolean),
+    Integer(IntegerLiteral),
+    Boolean(BooleanLiteral),
     String(StringLiteral),
+    Array(ArrayLiteral),
 }
 
 impl std::fmt::Display for Literal {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Literal::Integer(Integer { token: _, value }) => write!(f, "{}", value),
-            Literal::Boolean(Boolean { token: _, value }) => write!(f, "{}", value),
+            Literal::Integer(IntegerLiteral { token: _, value }) => write!(f, "{}", value),
+            Literal::Boolean(BooleanLiteral { token: _, value }) => write!(f, "{}", value),
             Literal::String(StringLiteral { token: _, value }) => write!(f, "{}", value),
+            Literal::Array(ArrayLiteral { token: _, elements }) => {
+                let mut elements_string = String::new();
+
+                for (index, element) in elements.iter().enumerate() {
+                    elements_string.push_str(&format!("{}", element));
+
+                    if index < elements.len() - 1 {
+                        elements_string.push_str(", ");
+                    }
+                }
+
+                write!(f, "[{}]", elements_string)
+            }
         }
     }
 }
@@ -158,13 +172,13 @@ impl std::fmt::Display for Program {
 
 // LITERALS
 #[derive(Clone, Debug, PartialEq)]
-pub struct Boolean {
+pub struct BooleanLiteral {
     pub token: Token,
     pub value: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Integer {
+pub struct IntegerLiteral {
     pub token: Token,
     pub value: i64,
 }
@@ -173,6 +187,12 @@ pub struct Integer {
 pub struct StringLiteral {
     pub token: Token,
     pub value: String,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ArrayLiteral {
+    pub token: Token,
+    pub elements: Vec<Expression>,
 }
 
 // EXPRESSIONS
