@@ -37,8 +37,6 @@ pub fn init_repl() -> Result<(), Error> {
 
                     let program = parser.parse_program()?;
 
-                    dbg!(&program);
-
                     parser.check_errors()?;
 
                     let evaluated = evaluator::eval_statements(&program.statements, &env)?;

@@ -74,6 +74,12 @@ fn eval_expression(expression: &Expression, env: &Env) -> Result<Rc<Object>> {
             eval_identifier(identifier_expression.to_string(), env)
         }
         Expression::Literal(literal) => eval_literal(&literal, env),
+        Expression::Index(index_expression) => {
+            let left = eval_expression(&index_expression.left, &Rc::clone(env))?;
+            let index = eval_expression(&index_expression.index, &Rc::clone(env))?;
+
+            eval_index_expression(left, index)
+        },
         Expression::Infix(infix_expression) => {
             let left = eval_expression(&infix_expression.left, &Rc::clone(env))?;
             let right = eval_expression(&infix_expression.right, &Rc::clone(env))?;
@@ -139,6 +145,27 @@ fn eval_if_expression(expression: &Expression, env: &Env) -> Result<Rc<Object>> 
             "Unknown expression type: {}",
             expression
         )))
+    }
+}
+
+fn eval_index_expression(
+    left: Rc<Object>,
+    index: Rc<Object>,
+) -> Result<Rc<Object>> {
+    match (&*left, &*index) {
+        (Object::Array(elements), Object::Integer(index)) => {
+            let max = elements.len() - 1;
+
+            if *index < 0 || *index > max as i64 {
+                return Ok(Object::Null.into());
+            }
+
+            return Ok(Rc::clone(&elements[*index as usize]));
+        }
+        _ => Err(Error::msg(format!(
+            "Unknown index expression: {}[{}]",
+            left, index
+        ))),
     }
 }
 
@@ -474,6 +501,27 @@ mod tests {
             } else {
                 assert_eq!(*evaluated, Object::Null);
             }
+        }
+
+        Ok(())
+    }
+    
+    #[test]
+    fn test_eval_index_expressions() -> Result<(), Error> {
+        let tests = vec![
+            ("[1, 2, 3][0]", 1),
+            ("[1, 2, 3][1]", 2),
+            ("[1, 2, 3][2]", 3),
+            ("$i = 0; [1][$i];", 1),
+            ("[1, 2, 3][1 + 1];", 3),
+            ("$myArray = [1, 2, 3]; $myArray[2];", 3),
+            ("$myArray = [1, 2, 3]; $myArray[0] + $myArray[1] + $myArray[2];", 6),
+        ];
+
+        for (input, expected) in tests {
+            let evaluated = assert_eval(input)?;
+
+            assert_integer_literal_object(evaluated, expected)?;
         }
 
         Ok(())

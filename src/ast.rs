@@ -56,6 +56,7 @@ pub enum Expression {
     If(IfExpression),
     Function(FunctionLiteral),
     Call(CallExpression),
+    Index(IndexExpression),
 }
 
 impl std::fmt::Display for Expression {
@@ -63,6 +64,11 @@ impl std::fmt::Display for Expression {
         match self {
             Expression::Identifier(identifier) => write!(f, "{}", identifier),
             Expression::Literal(literal) => write!(f, "{}", literal),
+            Expression::Index(IndexExpression {
+                token: _,
+                left,
+                index,
+            }) => write!(f, "({}[{}])", left, index),
             Expression::Infix(InfixExpression {
                 token: _,
                 left,
@@ -228,6 +234,13 @@ pub struct IfExpression {
     pub condition: Box<Expression>,
     pub consequence: BlockStatement,
     pub alternative: Option<BlockStatement>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct IndexExpression {
+    pub token: Token,
+    pub left: Box<Expression>,
+    pub index: Box<Expression>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

@@ -7,7 +7,7 @@ use crate::{
     ast::{
         Assignment, BlockStatement, BooleanLiteral, CallExpression, Expression, FunctionLiteral,
         Identifier, IfExpression, InfixExpression, IntegerLiteral, Literal, PrefixExpression, Program,
-        ReturnStatement, Statement, StringLiteral, ArrayLiteral,
+        ReturnStatement, Statement, StringLiteral, ArrayLiteral, IndexExpression,
     },
     lexer::Lexer,
     token::{Token, TokenType},
@@ -27,6 +27,7 @@ enum Precedence {
     Product,
     Prefix,
     Call,
+    Index,
 }
 
 pub struct Parser<'a> {
@@ -104,6 +105,7 @@ impl<'a> Parser<'a> {
                 (TokenType::Slash, Precedence::Product),
                 (TokenType::Asterisk, Precedence::Product),
                 (TokenType::LParen, Precedence::Call),
+                (TokenType::LBracket, Precedence::Index),
             ]),
         };
 
@@ -123,7 +125,7 @@ impl<'a> Parser<'a> {
         parser.register_prefix(TokenType::LBracket, |p| Parser::parse_array_literal(p));
 
         parser.register_infix(TokenType::LParen, |p, left| Parser::parse_call_expression(p, left));
-
+        parser.register_infix(TokenType::LBracket, |p, left| Parser::parse_index_expression(p, left));
 
         parser.register_infix(TokenType::Plus, |p, left| {
             Parser::parse_infix_expression(p, left)
@@ -695,6 +697,29 @@ impl<'a> Parser<'a> {
         }));
     }
 
+    fn parse_index_expression(&mut self, left: Expression) -> Result<Expression> {
+        info!(
+            "parse_index_expression: Current token: {:?}",
+            self.current_token
+        );
+
+        let current_token = self.current_token.clone().unwrap();
+
+        self.next_token();
+
+        let index = self.parse_expression(Precedence::Lowest)?;
+
+        if !self.expect_peek(&TokenType::RBracket) {
+            return Err(Error::msg("Expected RBracket"));
+        }
+
+        Ok(Expression::Index(IndexExpression {
+            token: current_token,
+            left: Box::new(left),
+            index: Box::new(index),
+        }))
+    }
+
     fn parse_infix_expression(&mut self, left: Expression) -> Result<Expression> {
         info!(
             "parse_infix_expression: Current token: {:?}",
@@ -976,6 +1001,34 @@ mod tests {
                 }
             } else {
                 assert!(false, "Expected IfExpression");
+            }
+        } else {
+            assert!(false, "Expected ExpressionStatement");
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_index_expressions() -> Result<(), Error> {
+        let input = "$myArray[1 + 1]";
+
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+
+        let program = parser.parse_program()?;
+
+        parser.check_errors()?;
+
+        assert_eq!(1, program.statements.len());
+
+        if let Statement::Expr(expression) = &program.statements[0] {
+            if let Expression::Index(index_expression) = &expression {
+                assert_identifier(&index_expression.left, "$myArray")?;
+
+                assert_infix_expression(&index_expression.index, "1", "+", "1")?;
+            } else {
+                assert!(false, "Expected IndexExpression");
             }
         } else {
             assert!(false, "Expected ExpressionStatement");
