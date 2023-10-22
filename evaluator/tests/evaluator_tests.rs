@@ -5,9 +5,7 @@ use anyhow::Error;
 use evaluator::eval;
 use lexer::Lexer;
 use object::{environment::Environment, Object};
-use parser::{Parser, ast::Node};
-
-use lexer::*;
+use parser::{ast::Node, Parser};
 
 #[test]
 fn test_eval_boolean_literals() -> Result<(), Error> {
@@ -118,7 +116,7 @@ fn test_eval_arrays() -> Result<(), Error> {
     for (input, expected) in tests {
         let evaluated = assert_eval(input)?;
 
-        if let Object::Array(elements) = &* evaluated {
+        if let Object::Array(elements) = &*evaluated {
             assert_eq!(elements.len(), expected.len());
 
             for (index, element) in elements.iter().enumerate() {
@@ -183,7 +181,10 @@ fn test_eval_index_expressions() -> Result<(), Error> {
         ("$i = 0; [1][$i];", 1),
         ("[1, 2, 3][1 + 1];", 3),
         ("$myArray = [1, 2, 3]; $myArray[2];", 3),
-        ("$myArray = [1, 2, 3]; $myArray[0] + $myArray[1] + $myArray[2];", 6),
+        (
+            "$myArray = [1, 2, 3]; $myArray[0] + $myArray[1] + $myArray[2];",
+            6,
+        ),
     ];
 
     for (input, expected) in tests {
@@ -263,7 +264,9 @@ fn assert_string_literal_object(object: Rc<Object>, expected: &str) -> Result<()
     // Dereference the Rc<Object> to get an Object and then reference it again for pattern matching.
     match &*object {
         Object::String(string) if string == expected => Ok(()),
-        Object::String(_) => Err(anyhow::anyhow!("String value does not match expected value.")),
+        Object::String(_) => Err(anyhow::anyhow!(
+            "String value does not match expected value."
+        )),
         _ => Err(Error::msg("Object is not a String.")),
     }
 }

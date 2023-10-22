@@ -1,9 +1,12 @@
 use lexer::Lexer;
-use parser::{*, ast::{Expression, Literal, BlockStatement}};
+use parser::{
+    ast::{BlockStatement, Expression, Literal},
+    *,
+};
 
 use anyhow::{Error, Result};
 
-use parser::ast::{Statement, ArrayLiteral};
+use parser::ast::{ArrayLiteral, Statement};
 
 #[test]
 fn test_assignment_statements() -> Result<(), Error> {
@@ -64,9 +67,7 @@ fn test_boolean_expression() -> Result<(), Error> {
                 }
             }
             Statement::Assign(variable_assignment) => {
-                if let Expression::Literal(Literal::Boolean(boolean)) =
-                    &variable_assignment.value
-                {
+                if let Expression::Literal(Literal::Boolean(boolean)) = &variable_assignment.value {
                     assert_eq!(expected_values[i], boolean.value);
                 } else {
                     assert!(false, "Expected Boolean expression");
@@ -135,9 +136,7 @@ fn test_if_expression() -> Result<(), Error> {
 
             assert_eq!(1, if_expression.consequence.statements.len());
 
-            if let Statement::Return(return_statement) =
-                &if_expression.consequence.statements[0]
-            {
+            if let Statement::Return(return_statement) = &if_expression.consequence.statements[0] {
                 assert_identifier(&return_statement.return_value, "$x")?;
             } else {
                 assert!(false, "Expected ReturnStatement");
@@ -173,9 +172,7 @@ fn test_if_else_expression() -> Result<(), Error> {
 
             assert_eq!(1, if_expression.consequence.statements.len());
 
-            if let Statement::Return(return_statement) =
-                &if_expression.consequence.statements[0]
-            {
+            if let Statement::Return(return_statement) = &if_expression.consequence.statements[0] {
                 assert_identifier(&return_statement.return_value, "$x")?;
             } else {
                 assert!(false, "Expected ReturnStatement");
@@ -307,7 +304,9 @@ fn test_array_literal_expression() -> Result<(), Error> {
     parser.check_errors()?;
 
     if let Statement::Expr(expression) = &program.statements[0] {
-        if let Expression::Literal(Literal::Array(ArrayLiteral { token: _, elements})) = &expression {
+        if let Expression::Literal(Literal::Array(ArrayLiteral { token: _, elements })) =
+            &expression
+        {
             assert_eq!(3, elements.len());
 
             assert_integer_literal(&elements[0], 1)?;

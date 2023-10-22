@@ -17,10 +17,7 @@ pub fn init_repl() -> Result<(), Error> {
         info!("No previous history.");
     }
 
-    println!(
-        "php-rs interpreter v{}",
-        env!("CARGO_PKG_VERSION")
-    );
+    println!("php-rs interpreter v{}", env!("CARGO_PKG_VERSION"));
 
     let env = Rc::new(RefCell::new(Environment::new()));
 

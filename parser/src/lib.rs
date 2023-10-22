@@ -6,13 +6,13 @@ use log::info;
 pub mod ast;
 
 use ast::{
-            Assignment, BlockStatement, BooleanLiteral, CallExpression, Expression, FunctionLiteral,
-            Identifier, IfExpression, InfixExpression, IntegerLiteral, Literal, PrefixExpression, Program,
-            ReturnStatement, Statement, StringLiteral, ArrayLiteral, IndexExpression,
+    ArrayLiteral, Assignment, BlockStatement, BooleanLiteral, CallExpression, Expression,
+    FunctionLiteral, Identifier, IfExpression, IndexExpression, InfixExpression, IntegerLiteral,
+    Literal, PrefixExpression, Program, ReturnStatement, Statement, StringLiteral,
 };
 
-use lexer::Lexer;
 use lexer::token::{Token, TokenType};
+use lexer::Lexer;
 
 type ParseResult = Result<Expression>;
 
@@ -117,16 +117,22 @@ impl<'a> Parser<'a> {
         parser.register_prefix(TokenType::Bang, |p| Parser::parse_prefix_expression(p));
         parser.register_prefix(TokenType::Minus, |p| Parser::parse_prefix_expression(p));
 
-        parser.register_prefix(TokenType::Dollar, |p| Parser::parse_variable_reference_expression(p));
-        
+        parser.register_prefix(TokenType::Dollar, |p| {
+            Parser::parse_variable_reference_expression(p)
+        });
+
         parser.register_prefix(TokenType::True, |p| Parser::parse_boolean_literal(p));
         parser.register_prefix(TokenType::False, |p| Parser::parse_boolean_literal(p));
         parser.register_prefix(TokenType::Int, |p| Parser::parse_integer_literal(p));
         parser.register_prefix(TokenType::String, |p| Parser::parse_string_literal(p));
         parser.register_prefix(TokenType::LBracket, |p| Parser::parse_array_literal(p));
 
-        parser.register_infix(TokenType::LParen, |p, left| Parser::parse_call_expression(p, left));
-        parser.register_infix(TokenType::LBracket, |p, left| Parser::parse_index_expression(p, left));
+        parser.register_infix(TokenType::LParen, |p, left| {
+            Parser::parse_call_expression(p, left)
+        });
+        parser.register_infix(TokenType::LBracket, |p, left| {
+            Parser::parse_index_expression(p, left)
+        });
 
         parser.register_infix(TokenType::Plus, |p, left| {
             Parser::parse_infix_expression(p, left)

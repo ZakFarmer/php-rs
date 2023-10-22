@@ -3,8 +3,8 @@ use std::{cell::RefCell, rc::Rc};
 use anyhow::{Error, Ok, Result};
 
 use parser::ast::{
-        BooleanLiteral, CallExpression, Expression, FunctionLiteral, IfExpression, Literal, Node,
-        Statement, ArrayLiteral,
+    ArrayLiteral, BooleanLiteral, CallExpression, Expression, FunctionLiteral, IfExpression,
+    Literal, Node, Statement,
 };
 
 use object::{
@@ -78,7 +78,7 @@ fn eval_expression(expression: &Expression, env: &Env) -> Result<Rc<Object>> {
             let index = eval_expression(&index_expression.index, &Rc::clone(env))?;
 
             eval_index_expression(left, index)
-        },
+        }
         Expression::Infix(infix_expression) => {
             let left = eval_expression(&infix_expression.left, &Rc::clone(env))?;
             let right = eval_expression(&infix_expression.right, &Rc::clone(env))?;
@@ -147,10 +147,7 @@ fn eval_if_expression(expression: &Expression, env: &Env) -> Result<Rc<Object>> 
     }
 }
 
-fn eval_index_expression(
-    left: Rc<Object>,
-    index: Rc<Object>,
-) -> Result<Rc<Object>> {
+fn eval_index_expression(left: Rc<Object>, index: Rc<Object>) -> Result<Rc<Object>> {
     match (&*left, &*index) {
         (Object::Array(elements), Object::Integer(index)) => {
             let max = elements.len() - 1;
@@ -311,7 +308,7 @@ fn eval_literal(literal: &Literal, env: &Env) -> Result<Rc<Object>> {
         Literal::Integer(integer) => Object::Integer(integer.value),
         Literal::Boolean(BooleanLiteral { value, .. }) => Object::Boolean(*value),
         Literal::String(string) => Object::String(string.value.clone()),
-        Literal::Array(ArrayLiteral { elements, ..}) => {
+        Literal::Array(ArrayLiteral { elements, .. }) => {
             let elements = eval_expressions(elements, env)?;
 
             return Ok(Rc::from(Object::Array(elements)));

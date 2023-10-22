@@ -2,7 +2,7 @@ use anyhow::Error;
 
 use token::TokenType;
 
-use lexer::{*, token::Token};
+use lexer::{token::Token, *};
 
 #[test]
 fn test_lexer() -> Result<(), Error> {
