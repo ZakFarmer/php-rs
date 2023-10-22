@@ -1,10 +1,17 @@
+use std::{cell::RefCell, rc::Rc};
 
-use std::{rc::Rc, cell::RefCell};
+use anyhow::{Error, Ok, Result};
 
-use anyhow::{Result, Ok, Error};
-use lazy_static::lazy_static;
-
-use crate::{ast::{Boolean, Expression, Literal, Node, Statement, IfExpression, FunctionLiteral, CallExpression}, object::{Object, environment::{Env, Environment}}};
+use crate::{
+    ast::{
+        Boolean, CallExpression, Expression, FunctionLiteral, IfExpression, Literal, Node,
+        Statement,
+    },
+    object::{
+        environment::{Env, Environment},
+        Object,
+    },
+};
 
 pub fn eval(node: Node, env: &Env) -> Result<Rc<Object>> {
     match node {
@@ -55,7 +62,7 @@ fn is_truthy(object: &Object) -> bool {
 }
 
 fn unwrap_return_value(object: Rc<Object>) -> Result<Rc<Object>> {
-    match &* object {
+    match &*object {
         Object::Return(value) => Ok(Rc::clone(value)),
         _ => Ok(object),
     }
@@ -63,43 +70,39 @@ fn unwrap_return_value(object: Rc<Object>) -> Result<Rc<Object>> {
 
 fn eval_expression(expression: &Expression, env: &Env) -> Result<Rc<Object>> {
     match expression {
-        Expression::Identifier(identifier_expression) => eval_identifier(identifier_expression.to_string(), env),
+        Expression::Identifier(identifier_expression) => {
+            eval_identifier(identifier_expression.to_string(), env)
+        }
         Expression::Literal(literal) => eval_literal(&literal),
         Expression::Infix(infix_expression) => {
             let left = eval_expression(&infix_expression.left, &Rc::clone(env))?;
             let right = eval_expression(&infix_expression.right, &Rc::clone(env))?;
 
-            eval_infix_expression(
-                infix_expression.operator.to_string(),
-                &left,
-                &right,
-                env
-            )
-        },
+            eval_infix_expression(infix_expression.operator.to_string(), &left, &right, env)
+        }
         Expression::Prefix(prefix_expression) => {
             let right = eval_expression(&prefix_expression.right, &Rc::clone(env))?;
 
-            eval_prefix_expression(
-                prefix_expression.operator.to_string(), 
-                &right,
-                env
-            )
-        },
-        Expression::If(if_expression) => eval_if_expression(expression, env),
-        Expression::Call(CallExpression { function, token, arguments }) => {
+            eval_prefix_expression(prefix_expression.operator.to_string(), &right, env)
+        }
+        Expression::If(_if_expression) => eval_if_expression(expression, env),
+        Expression::Call(CallExpression {
+            function,
+            token: _,
+            arguments,
+        }) => {
             let function = eval_expression(function, env)?; // This should give you a Function object.
             let arguments = eval_expressions(arguments, env)?;
-            
+
             apply_function(&function, &arguments)
-        },
+        }
         Expression::Function(FunctionLiteral {
-            parameters,
-            body,
-            ..
-        }) => {
-            Ok(Object::Function(parameters.clone(), body.clone(), Rc::clone(env)).into())
-        },
-        _ => Err(Error::msg(format!("Unknown expression type: {}", expression))),
+            parameters, body, ..
+        }) => Ok(Object::Function(parameters.clone(), body.clone(), Rc::clone(env)).into()),
+        _ => Err(Error::msg(format!(
+            "Unknown expression type: {}",
+            expression
+        ))),
     }
 }
 
@@ -132,11 +135,19 @@ fn eval_if_expression(expression: &Expression, env: &Env) -> Result<Rc<Object>> 
             }
         }
     } else {
-        Err(Error::msg(format!("Unknown expression type: {}", expression)))
+        Err(Error::msg(format!(
+            "Unknown expression type: {}",
+            expression
+        )))
     }
 }
 
-fn eval_infix_expression(operator: String, left: &Object, right: &Object, env: &Env) -> Result<Rc<Object>> {
+fn eval_infix_expression(
+    operator: String,
+    left: &Object,
+    right: &Object,
+    _env: &Env,
+) -> Result<Rc<Object>> {
     match (left, right) {
         (Object::Integer(left), Object::Integer(right)) => {
             eval_integer_infix_expression(operator, *left, *right)
@@ -147,10 +158,7 @@ fn eval_infix_expression(operator: String, left: &Object, right: &Object, env: &
         (Object::String(left), Object::String(right)) => {
             eval_string_infix_expression(operator, left.to_string(), right.to_string())
         }
-        _ => Err(Error::msg(format!(
-            "Unknown operator: {}",
-            operator
-        ))),
+        _ => Err(Error::msg(format!("Unknown operator: {}", operator))),
     }
 }
 
@@ -158,10 +166,12 @@ fn eval_boolean_infix_expression(operator: String, left: bool, right: bool) -> R
     let result = match operator.as_str() {
         "==" => native_bool_to_bool_object(left == right),
         "!=" => native_bool_to_bool_object(left != right),
-        _ => return Err(Error::msg(format!(
-            "Unknown operator: {} {} {}",
-            left, operator, right
-        ))),
+        _ => {
+            return Err(Error::msg(format!(
+                "Unknown operator: {} {} {}",
+                left, operator, right
+            )))
+        }
     };
 
     Ok(result.into())
@@ -177,35 +187,45 @@ fn eval_integer_infix_expression(operator: String, left: i64, right: i64) -> Res
         ">" => native_bool_to_bool_object(left > right),
         "==" => native_bool_to_bool_object(left == right),
         "!=" => native_bool_to_bool_object(left != right),
-        _ => return Err(Error::msg(format!(
-            "Unknown operator: {} {} {}",
-            left, operator, right
-        ))),
+        _ => {
+            return Err(Error::msg(format!(
+                "Unknown operator: {} {} {}",
+                left, operator, right
+            )))
+        }
     };
 
     Ok(result.into())
 }
 
-fn eval_string_infix_expression(operator: String, left: String, right: String) -> Result<Rc<Object>> {
+fn eval_string_infix_expression(
+    operator: String,
+    left: String,
+    right: String,
+) -> Result<Rc<Object>> {
     let result = match operator.as_str() {
         "+" => Object::String(format!("{}{}", left, right)),
-        _ => return Err(Error::msg(format!(
-            "Unknown operator: {} {} {}",
-            left, operator, right
-        ))),
+        _ => {
+            return Err(Error::msg(format!(
+                "Unknown operator: {} {} {}",
+                left, operator, right
+            )))
+        }
     };
 
     Ok(result.into())
 }
 
-fn eval_prefix_expression(operator: String, right: &Object, env: &Env) -> Result<Rc<Object>> {
+fn eval_prefix_expression(operator: String, right: &Object, _env: &Env) -> Result<Rc<Object>> {
     match operator.as_str() {
         "-" => eval_minus_prefix_operator_expression(right),
         "!" => eval_bang_operator_expression(right),
-        _ => return Err(Error::msg(format!(
-            "Unknown operator: {}{}",
-            operator, right
-        ))),
+        _ => {
+            return Err(Error::msg(format!(
+                "Unknown operator: {}{}",
+                operator, right
+            )))
+        }
     }
 }
 
@@ -222,10 +242,12 @@ fn eval_bang_operator_expression(right: &Object) -> Result<Rc<Object>> {
 fn eval_minus_prefix_operator_expression(right: &Object) -> Result<Rc<Object>> {
     let result = match *right {
         Object::Integer(integer) => Rc::from(Object::Integer(-integer)),
-        _ => return Err(Error::msg(format!(
-            "Invalid use of minus operator: -{}",
-            right
-        ))),
+        _ => {
+            return Err(Error::msg(format!(
+                "Invalid use of minus operator: -{}",
+                right
+            )))
+        }
     };
 
     Ok(result.into())
@@ -241,12 +263,12 @@ fn eval_statement(statement: &Statement, env: &Env) -> Result<Rc<Object>> {
             env.borrow_mut().set(assignment.name.to_string(), object);
 
             Ok(value)
-        },
+        }
         Statement::Return(return_statement) => {
             let value = eval_expression(&return_statement.return_value, env)?;
 
             Ok(Rc::new(Object::Return(value)))
-        },
+        }
         _ => Err(Error::msg(format!("Unknown statement type: {}", statement))),
     }
 }
@@ -279,7 +301,11 @@ mod tests {
 
     use anyhow::Error;
 
-    use crate::{lexer::Lexer, object::{Object, environment::Environment}, parser::Parser};
+    use crate::{
+        lexer::Lexer,
+        object::{environment::Environment, Object},
+        parser::Parser,
+    };
 
     use super::*;
 
@@ -330,7 +356,7 @@ mod tests {
     #[test]
     fn test_eval_integer_expression() -> Result<(), Error> {
         let tests = vec![
-            ("5", 5), 
+            ("5", 5),
             ("10", 10),
             ("-5", -5),
             ("-10", -10),
@@ -357,7 +383,12 @@ mod tests {
 
     #[test]
     fn test_eval_bang_operator() -> Result<(), Error> {
-        let tests = vec![("!true", false), ("!false", true), ("!5", false), ("!!true", true)];
+        let tests = vec![
+            ("!true", false),
+            ("!false", true),
+            ("!5", false),
+            ("!!true", true),
+        ];
 
         for (input, expected) in tests {
             let evaluated = assert_eval(input)?;
@@ -413,9 +444,7 @@ mod tests {
 
     #[test]
     fn test_eval_functions() -> Result<(), Error> {
-        let tests = vec![
-            ("function ($x) { $x + 2; }(2);", 4)
-        ];
+        let tests = vec![("function ($x) { $x + 2; }(2);", 4)];
 
         for (input, expected) in tests {
             let evaluated = assert_eval(input)?;
@@ -429,7 +458,7 @@ mod tests {
 
     fn assert_eval(input: &str) -> Result<Rc<Object>, Error> {
         let env = Rc::new(RefCell::new(Environment::new()));
-        
+
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
 

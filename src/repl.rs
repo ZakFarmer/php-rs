@@ -4,7 +4,7 @@ use anyhow::{Error, Result};
 
 use rustyline::error::ReadlineError;
 
-use crate::{evaluator, lexer::Lexer, parser::Parser, object::environment::Environment};
+use crate::{evaluator, lexer::Lexer, object::environment::Environment, parser::Parser};
 
 const PROMPT: &str = ">> ";
 

@@ -62,12 +62,12 @@ impl<'a> Lexer<'a> {
             Some('>') => (TokenType::Gt, ">".to_string()),
             Some('$') => {
                 self.read_char();
-    
+
                 if let Some(ch) = self.ch {
                     if ch.is_alphabetic() || ch == '_' {
                         let identifier = self.read_identifier();
                         let var_name = format!("${}", identifier);
-    
+
                         return Token {
                             token_type: TokenType::Ident,
                             literal: var_name,

@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 
 use anyhow::{Error, Result};
-use log::{trace, info};
+use log::info;
 
 use crate::{
     ast::{
         Assignment, BlockStatement, Boolean, CallExpression, Expression, FunctionLiteral,
-        Identifier, IfExpression, InfixExpression, Integer, Literal, PrefixExpression,
-        Program, ReturnStatement, Statement, StringLiteral,
+        Identifier, IfExpression, InfixExpression, Integer, Literal, PrefixExpression, Program,
+        ReturnStatement, Statement, StringLiteral,
     },
     lexer::Lexer,
     token::{Token, TokenType},
@@ -116,14 +116,12 @@ impl<'a> Parser<'a> {
         parser.register_prefix(TokenType::If, |p| Parser::parse_if_expression(p));
         parser.register_prefix(TokenType::Bang, |p| Parser::parse_prefix_expression(p));
         parser.register_prefix(TokenType::Minus, |p| Parser::parse_prefix_expression(p));
-        
+
         parser.register_prefix(TokenType::Dollar, |p| {
             Parser::parse_variable_reference_expression(p)
         });
 
-        parser.register_prefix(TokenType::String, |p| {
-            Parser::parse_string_literal(p)
-        });
+        parser.register_prefix(TokenType::String, |p| Parser::parse_string_literal(p));
 
         parser.register_infix(TokenType::LParen, |p, left| {
             Parser::parse_call_expression(p, left)
@@ -178,7 +176,8 @@ impl<'a> Parser<'a> {
         if self.current_token.is_some() && self.current_token.as_ref().unwrap().token_type == t {
             true
         } else {
-            self.errors.push(format!("Expected {:?}, got {:?}", t, self.current_token));
+            self.errors
+                .push(format!("Expected {:?}, got {:?}", t, self.current_token));
             false
         }
     }
@@ -261,7 +260,7 @@ impl<'a> Parser<'a> {
                     } else {
                         self.parse_expression_statement()
                     }
-                },
+                }
                 _ => self.parse_expression_statement(),
             }
         } else {
@@ -270,7 +269,10 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_variable_reference_expression(&mut self) -> Result<Expression> {
-        info!("parse_variable_reference_expression: Current token: {:?}", self.current_token);
+        info!(
+            "parse_variable_reference_expression: Current token: {:?}",
+            self.current_token
+        );
 
         // Expect the next token to be an identifier
         if let Some(token) = &self.current_token {
@@ -279,9 +281,9 @@ impl<'a> Parser<'a> {
                     token: token.clone(),
                     value: token.literal.clone(),
                 };
-                
+
                 self.next_token();
-    
+
                 return Ok(Expression::Identifier(identifier));
             } else {
                 return Err(Error::msg(format!(
@@ -295,32 +297,40 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_assignment_statement(&mut self) -> Result<Statement> {
-        info!("parse_assignment_statement: Current token: {:?}", self.current_token);
+        info!(
+            "parse_assignment_statement: Current token: {:?}",
+            self.current_token
+        );
 
         // Ensure the variable name is an identifier.
         let name_token = if let Some(token) = &self.current_token {
             if token.token_type == TokenType::Ident {
                 token.clone()
             } else {
-                self.errors.push(format!("Expected identifier, got {:?}", token));
+                self.errors
+                    .push(format!("Expected identifier, got {:?}", token));
                 return Err(Error::msg(format!("Expected identifier, got {:?}", token)));
             }
         } else {
-            self.errors.push("Expected identifier, got None".to_string());
+            self.errors
+                .push("Expected identifier, got None".to_string());
             return Err(Error::msg("Expected identifier, got None"));
         };
-    
+
         // Move to the next token and check if it's an assignment.
         self.next_token();
-    
+
         if let Some(token) = &self.current_token {
             if token.token_type == TokenType::Assign {
                 // Parse as assignment
                 self.next_token();
 
-                info!("parse_assignment_statement: Next token: {:?}", self.current_token);
+                info!(
+                    "parse_assignment_statement: Next token: {:?}",
+                    self.current_token
+                );
                 let value_expression = self.parse_expression(Precedence::Lowest);
-    
+
                 if let Ok(value_expression) = value_expression {
                     let variable_assignment = Assignment {
                         token: name_token.clone(),
@@ -334,10 +344,11 @@ impl<'a> Parser<'a> {
                     if self.peek_token_is(&TokenType::Semicolon) {
                         self.next_token();
                     }
-    
+
                     return Ok(Statement::Assign(variable_assignment));
                 } else {
-                    self.errors.push("Expected an expression after =".to_string());
+                    self.errors
+                        .push("Expected an expression after =".to_string());
                     return Err(Error::msg("Expected an expression after ="));
                 }
             } else {
@@ -351,7 +362,7 @@ impl<'a> Parser<'a> {
             self.errors.push("Unexpected end of input".to_string());
             return Err(Error::msg("Unexpected end of input"));
         }
-    }     
+    }
 
     fn parse_expression(&mut self, precedence: Precedence) -> Result<Expression> {
         info!("parse_expression: Current token: {:?}", self.current_token);
@@ -391,7 +402,10 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expression_statement(&mut self) -> Result<Statement> {
-        info!("parse_expression_statement: Current token: {:?}", self.current_token);
+        info!(
+            "parse_expression_statement: Current token: {:?}",
+            self.current_token
+        );
         let expr = self.parse_expression(Precedence::Lowest)?;
         if self.peek_token_is(&TokenType::Semicolon) {
             self.next_token();
@@ -401,7 +415,10 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_block_statement(&mut self) -> Result<BlockStatement> {
-        info!("parse_block_statement: Current token: {:?}", self.current_token);
+        info!(
+            "parse_block_statement: Current token: {:?}",
+            self.current_token
+        );
 
         let current_token = self.current_token.clone().unwrap();
 
@@ -426,7 +443,10 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_function_literal(&mut self) -> Result<Expression> {
-        info!("parse_function_literal: Current token: {:?}", self.current_token);
+        info!(
+            "parse_function_literal: Current token: {:?}",
+            self.current_token
+        );
 
         let current_token = self.current_token.clone().unwrap();
 
@@ -454,16 +474,19 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_function_parameters(&mut self) -> Result<Vec<Identifier>> {
-        info!("parse_function_parameters: Current token: {:?}", self.current_token);
+        info!(
+            "parse_function_parameters: Current token: {:?}",
+            self.current_token
+        );
         let mut identifiers = vec![];
-    
+
         if self.peek_token_is(&TokenType::RParen) {
             self.next_token(); // Consume the RParen and exit
             return Ok(identifiers);
         }
 
         self.next_token();
-    
+
         loop {
             if let Some(token) = &self.current_token {
                 if token.token_type == TokenType::Ident && token.literal.starts_with('$') {
@@ -473,10 +496,13 @@ impl<'a> Parser<'a> {
                     };
                     identifiers.push(identifier);
                 } else {
-                    return Err(Error::msg(format!("Expected identifier starting with '$', got {:?}", token)));
+                    return Err(Error::msg(format!(
+                        "Expected identifier starting with '$', got {:?}",
+                        token
+                    )));
                 }
             }
-    
+
             if self.peek_token_is(&TokenType::Comma) {
                 self.next_token();
                 self.next_token();
@@ -485,16 +511,20 @@ impl<'a> Parser<'a> {
 
                 break;
             } else {
-                return Err(Error::msg("Expected ',' or ')' after identifier".to_string()));
+                return Err(Error::msg(
+                    "Expected ',' or ')' after identifier".to_string(),
+                ));
             }
         }
-    
+
         Ok(identifiers)
     }
-    
 
     fn parse_grouped_expression(&mut self) -> Result<Expression> {
-        info!("parse_grouped_expression: Current token: {:?}", self.current_token);
+        info!(
+            "parse_grouped_expression: Current token: {:?}",
+            self.current_token
+        );
 
         self.next_token();
 
@@ -520,7 +550,10 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_integer_literal(&mut self) -> Result<Expression> {
-        info!("parse_integer_literal: Current token: {:?}", self.current_token);
+        info!(
+            "parse_integer_literal: Current token: {:?}",
+            self.current_token
+        );
 
         let current_token = self.current_token.clone().unwrap();
 
@@ -539,7 +572,10 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_call_arguments(&mut self) -> Vec<Expression> {
-        info!("parse_call_arguments: Current token: {:?}", self.current_token);
+        info!(
+            "parse_call_arguments: Current token: {:?}",
+            self.current_token
+        );
 
         let mut arguments = vec![];
 
@@ -566,7 +602,10 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_call_expression(&mut self, function: Expression) -> Result<Expression> {
-        info!("parse_call_expression: Current token: {:?}", self.current_token);
+        info!(
+            "parse_call_expression: Current token: {:?}",
+            self.current_token
+        );
         let current_token = self.current_token.clone().unwrap();
 
         let arguments = self.parse_call_arguments();
@@ -579,7 +618,10 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_if_expression(&mut self) -> Result<Expression> {
-        info!("parse_if_expression: Current token: {:?}", self.current_token);
+        info!(
+            "parse_if_expression: Current token: {:?}",
+            self.current_token
+        );
 
         self.expect_peek(TokenType::LParen);
         self.next_token();
@@ -607,7 +649,10 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_infix_expression(&mut self, left: Expression) -> Result<Expression> {
-        info!("parse_infix_expression: Current token: {:?}", self.current_token);
+        info!(
+            "parse_infix_expression: Current token: {:?}",
+            self.current_token
+        );
 
         let current_token = self.current_token.clone().unwrap();
 
@@ -633,7 +678,10 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_prefix_expression(&mut self) -> Result<Expression> {
-        info!("parse_prefix_expression: Current token: {:?}", self.current_token);
+        info!(
+            "parse_prefix_expression: Current token: {:?}",
+            self.current_token
+        );
 
         let current_token = self.current_token.clone().unwrap();
 
@@ -689,9 +737,7 @@ mod tests {
 
     use anyhow::{Error, Result};
 
-    use crate::ast::{
-        Statement,
-    };
+    use crate::ast::Statement;
 
     #[test]
     fn test_assignment_statements() -> Result<(), Error> {
