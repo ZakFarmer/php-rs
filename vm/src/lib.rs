@@ -111,6 +111,12 @@ impl Vm {
                 Opcode::OpPop => {
                     self.pop();
                 }
+                Opcode::OpTrue => {
+                    self.push(Rc::new(Object::Boolean(true)));
+                }
+                Opcode::OpFalse => {
+                    self.push(Rc::new(Object::Boolean(false)));
+                }
                 _ => {
                     return Err(Error::msg(format!("unknown opcode: {}", op)));
                 }

@@ -31,6 +31,24 @@ fn run_vm_tests(tests: Vec<VmTestCase>) -> Result<(), Error> {
 }
 
 #[test]
+fn test_boolean_expressions() -> Result<(), Error> {
+    let tests = vec![
+        VmTestCase {
+            input: "true".to_string(),
+            expected: "true".to_string(),
+        },
+        VmTestCase {
+            input: "false".to_string(),
+            expected: "false".to_string(),
+        },
+    ];
+
+    run_vm_tests(tests)?;
+
+    Ok(())
+}
+
+#[test]
 fn test_integer_arithmetic() -> Result<(), Error> {
     let tests = vec![
         VmTestCase {
