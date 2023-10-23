@@ -49,7 +49,7 @@ impl std::fmt::Display for Instructions {
 
         while i < self.0.len() {
             let op = self.0[i];
-            let opcode = Opcode::from(op);
+            let _opcode = Opcode::from(op);
             let definition = lookup(self.0[i].into());
 
             let (operands, read) = read_operands(&definition, &self.0[i + 1..]);

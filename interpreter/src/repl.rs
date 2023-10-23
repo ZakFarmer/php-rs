@@ -1,10 +1,10 @@
-use std::{cell::RefCell, rc::Rc};
+
 
 use anyhow::{Error, Result};
 
 use compiler::Compiler;
 use lexer::Lexer;
-use object::environment::Environment;
+
 use parser::{ast::Node, Parser};
 use rustyline::error::ReadlineError;
 use vm::Vm;
