@@ -1,4 +1,4 @@
-use std::{rc::Rc, borrow::Borrow};
+use std::{borrow::Borrow, rc::Rc};
 
 use anyhow::Error;
 use byteorder::{BigEndian, ByteOrder};
@@ -13,7 +13,7 @@ pub struct Vm {
     instructions: opcode::Instructions,
 
     stack: Vec<Rc<Object>>,
-    stack_pointer: usize
+    stack_pointer: usize,
 }
 
 impl Vm {
@@ -23,7 +23,7 @@ impl Vm {
             instructions: bytecode.instructions,
 
             stack: vec![Rc::new(Object::Null); STACK_SIZE],
-            stack_pointer: 0
+            stack_pointer: 0,
         }
     }
 
@@ -36,7 +36,8 @@ impl Vm {
 
             match op {
                 Opcode::OpConst => {
-                    let const_index = BigEndian::read_u16(&self.instructions.0[ip..ip + 2]) as usize;
+                    let const_index =
+                        BigEndian::read_u16(&self.instructions.0[ip..ip + 2]) as usize;
                     ip += 2;
 
                     self.push(Rc::clone(&self.constants[const_index]));
@@ -45,7 +46,7 @@ impl Vm {
                     let right = self.pop();
                     let left = self.pop();
 
-                    let result = match (&* left, &* right) {
+                    let result = match (&*left, &*right) {
                         (Object::Integer(l), Object::Integer(r)) => Object::Integer(l + r),
                         _ => {
                             return Err(Error::msg(format!(
@@ -116,6 +117,59 @@ impl Vm {
                 }
                 Opcode::OpFalse => {
                     self.push(Rc::new(Object::Boolean(false)));
+                }
+                Opcode::OpEqual => {
+                    let right = self.stack[self.stack_pointer - 1].borrow();
+                    let left = self.stack[self.stack_pointer - 2].borrow();
+
+                    let result = match (left, right) {
+                        (Object::Integer(l), Object::Integer(r)) => Object::Boolean(l == r),
+                        (Object::Boolean(l), Object::Boolean(r)) => Object::Boolean(l == r),
+                        _ => {
+                            return Err(Error::msg(format!(
+                                "unsupported types for equality: {} == {}",
+                                left, right
+                            )));
+                        }
+                    };
+
+                    self.stack_pointer -= 1;
+                    self.stack[self.stack_pointer - 1] = Rc::new(result);
+                }
+                Opcode::OpNotEqual => {
+                    let right = self.stack[self.stack_pointer - 1].borrow();
+                    let left = self.stack[self.stack_pointer - 2].borrow();
+
+                    let result = match (left, right) {
+                        (Object::Integer(l), Object::Integer(r)) => Object::Boolean(l != r),
+                        (Object::Boolean(l), Object::Boolean(r)) => Object::Boolean(l != r),
+                        _ => {
+                            return Err(Error::msg(format!(
+                                "unsupported types for inequality: {} != {}",
+                                left, right
+                            )));
+                        }
+                    };
+
+                    self.stack_pointer -= 1;
+                    self.stack[self.stack_pointer - 1] = Rc::new(result);
+                }
+                Opcode::OpGreaterThan => {
+                    let right = self.stack[self.stack_pointer - 1].borrow();
+                    let left = self.stack[self.stack_pointer - 2].borrow();
+
+                    let result = match (left, right) {
+                        (Object::Integer(l), Object::Integer(r)) => Object::Boolean(l > r),
+                        _ => {
+                            return Err(Error::msg(format!(
+                                "unsupported types for greater than: {} > {}",
+                                left, right
+                            )));
+                        }
+                    };
+
+                    self.stack_pointer -= 1;
+                    self.stack[self.stack_pointer - 1] = Rc::new(result);
                 }
                 _ => {
                     return Err(Error::msg(format!("unknown opcode: {}", op)));

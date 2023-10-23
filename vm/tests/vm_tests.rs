@@ -1,7 +1,7 @@
 use anyhow::Error;
 use compiler::Compiler;
 use lexer::Lexer;
-use parser::{Parser, ast::Node};
+use parser::{ast::Node, Parser};
 use vm::Vm;
 
 struct VmTestCase {

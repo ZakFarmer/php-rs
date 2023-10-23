@@ -1,5 +1,5 @@
 use anyhow::Error;
-use opcode::{make, Opcode, concat_instructions};
+use opcode::{concat_instructions, make, Opcode};
 
 #[test]
 fn test_make() -> Result<(), Error> {

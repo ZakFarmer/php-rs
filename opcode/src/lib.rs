@@ -70,12 +70,7 @@ impl std::fmt::Display for Instructions {
 impl Instructions {
     pub fn format_instructions(definition: &OpcodeDefinition, operands: &Vec<usize>) -> String {
         match definition.operand_widths.len() {
-            2 => format!(
-                "{} {} {}",
-                definition.name,
-                operands[0],
-                operands[1]
-            ),
+            2 => format!("{} {} {}", definition.name, operands[0], operands[1]),
             1 => format!("{} {}", definition.name, operands[0]),
             0 => format!("{}", definition.name),
             _ => unimplemented!(),
@@ -85,9 +80,10 @@ impl Instructions {
     pub fn merge_instructions(&self, other: &Instructions) -> Instructions {
         let ins = vec![self, other];
 
-        return Instructions(ins.iter().fold(vec![], |sum, &i| {
-            [sum.as_slice(), i.0.as_slice()].concat()
-        }));
+        return Instructions(
+            ins.iter()
+                .fold(vec![], |sum, &i| [sum.as_slice(), i.0.as_slice()].concat()),
+        );
     }
 }
 

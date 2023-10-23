@@ -2,11 +2,26 @@ use std::rc::Rc;
 
 use anyhow::Error;
 use opcode::Opcode;
-use parser::ast::{Expression, IntegerLiteral, Literal, Node, Statement, BooleanLiteral};
+use parser::ast::{BooleanLiteral, Expression, IntegerLiteral, Literal, Node, Statement};
 
+#[derive(Clone, PartialEq)]
 pub struct Bytecode {
     pub instructions: opcode::Instructions,
     pub constants: Vec<Rc<object::Object>>,
+}
+
+impl std::fmt::Debug for Bytecode {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let mut bytecode_string = String::new();
+
+        for (i, instruction) in self.instructions.0.iter().enumerate() {
+            let op = Opcode::from(*instruction);
+
+            bytecode_string.push_str(&format!("{:04} {}\n", i, op));
+        }
+
+        write!(f, "{}", bytecode_string)
+    }
 }
 
 pub struct Compiler {
@@ -78,7 +93,7 @@ impl Compiler {
                 self.compile_expression(e)?;
 
                 self.emit(Opcode::OpPop, vec![]);
-                
+
                 return Ok(());
             }
             _ => {
@@ -87,52 +102,42 @@ impl Compiler {
         }
     }
 
+    fn compile_operands(
+        &mut self,
+        left: &Box<Expression>,
+        right: &Box<Expression>,
+        operator: &str,
+    ) -> Result<(), Error> {
+        match operator {
+            "<" => {
+                self.compile_expression(right)?;
+                self.compile_expression(left)?;
+            }
+            _ => {
+                self.compile_expression(left)?;
+                self.compile_expression(right)?;
+            }
+        }
+        Ok(())
+    }
+
     fn compile_expression(&mut self, e: &Expression) -> Result<(), Error> {
         match e {
             Expression::Infix(infix) => {
-                self.compile_expression(&infix.left)?;
-                self.compile_expression(&infix.right)?;
+                self.compile_operands(&infix.left, &infix.right, &infix.operator)?;
 
                 match infix.operator.as_str() {
-                    "+" => {
-                        self.emit(opcode::Opcode::OpAdd, vec![]);
+                    "+" => self.emit(opcode::Opcode::OpAdd, vec![]),
+                    "-" => self.emit(opcode::Opcode::OpSub, vec![]),
+                    "*" => self.emit(opcode::Opcode::OpMul, vec![]),
+                    "/" => self.emit(opcode::Opcode::OpDiv, vec![]),
+                    ">" | "<" => self.emit(opcode::Opcode::OpGreaterThan, vec![]),
+                    "==" => self.emit(opcode::Opcode::OpEqual, vec![]),
+                    "!=" => self.emit(opcode::Opcode::OpNotEqual, vec![]),
+                    _ => return Err(Error::msg("compile_expression: unimplemented")),
+                };
 
-                        return Ok(());
-                    }
-                    "-" => {
-                        self.emit(opcode::Opcode::OpSub, vec![]);
-
-                        return Ok(());
-                    }
-                    "*" => {
-                        self.emit(opcode::Opcode::OpMul, vec![]);
-
-                        return Ok(());
-                    }
-                    "/" => {
-                        self.emit(opcode::Opcode::OpDiv, vec![]);
-
-                        return Ok(());
-                    }
-                    ">" => {
-                        self.emit(opcode::Opcode::OpGreaterThan, vec![]);
-
-                        return Ok(());
-                    }
-                    "==" => {
-                        self.emit(opcode::Opcode::OpEqual, vec![]);
-
-                        return Ok(());
-                    }
-                    "!=" => {
-                        self.emit(opcode::Opcode::OpNotEqual, vec![]);
-
-                        return Ok(());
-                    }
-                    _ => {
-                        return Err(Error::msg("compile_expression: unimplemented"));
-                    }
-                }
+                Ok(())
             }
             Expression::Literal(literal) => match literal {
                 Literal::Boolean(boolean) => match boolean {
@@ -146,7 +151,7 @@ impl Compiler {
 
                         return Ok(());
                     }
-                }
+                },
                 Literal::Integer(IntegerLiteral { value, .. }) => {
                     let integer = object::Object::Integer(*value);
 
@@ -159,7 +164,7 @@ impl Compiler {
                 _ => {
                     return Err(Error::msg("compile_expression: unimplemented"));
                 }
-            }
+            },
             _ => {
                 return Err(Error::msg("compile_expression: unimplemented"));
             }

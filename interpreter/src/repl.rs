@@ -5,7 +5,7 @@ use anyhow::{Error, Result};
 use compiler::Compiler;
 use lexer::Lexer;
 use object::environment::Environment;
-use parser::{Parser, ast::Node};
+use parser::{ast::Node, Parser};
 use rustyline::error::ReadlineError;
 use vm::Vm;
 

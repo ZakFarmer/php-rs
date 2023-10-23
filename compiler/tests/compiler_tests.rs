@@ -26,6 +26,60 @@ fn test_boolean_expressions() -> Result<(), Error> {
             expected_constants: vec![],
             expected_instructions: vec![opcode::make(opcode::Opcode::OpFalse, &vec![])],
         },
+        CompilerTestCase {
+            input: "1 > 2".to_string(),
+            expected_constants: vec![Object::Integer(1), Object::Integer(2)],
+            expected_instructions: vec![
+                opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                opcode::make(opcode::Opcode::OpConst, &vec![1]),
+                opcode::make(opcode::Opcode::OpGreaterThan, &vec![]),
+            ],
+        },
+        CompilerTestCase {
+            input: "1 < 2".to_string(),
+            expected_constants: vec![Object::Integer(2), Object::Integer(1)],
+            expected_instructions: vec![
+                opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                opcode::make(opcode::Opcode::OpConst, &vec![1]),
+                opcode::make(opcode::Opcode::OpGreaterThan, &vec![]),
+            ],
+        },
+        CompilerTestCase {
+            input: "1 == 2".to_string(),
+            expected_constants: vec![Object::Integer(1), Object::Integer(2)],
+            expected_instructions: vec![
+                opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                opcode::make(opcode::Opcode::OpConst, &vec![1]),
+                opcode::make(opcode::Opcode::OpEqual, &vec![]),
+            ],
+        },
+        CompilerTestCase {
+            input: "1 != 2".to_string(),
+            expected_constants: vec![Object::Integer(1), Object::Integer(2)],
+            expected_instructions: vec![
+                opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                opcode::make(opcode::Opcode::OpConst, &vec![1]),
+                opcode::make(opcode::Opcode::OpNotEqual, &vec![]),
+            ],
+        },
+        CompilerTestCase {
+            input: "true == false".to_string(),
+            expected_constants: vec![],
+            expected_instructions: vec![
+                opcode::make(opcode::Opcode::OpTrue, &vec![]),
+                opcode::make(opcode::Opcode::OpFalse, &vec![]),
+                opcode::make(opcode::Opcode::OpEqual, &vec![]),
+            ],
+        },
+        CompilerTestCase {
+            input: "true != false".to_string(),
+            expected_constants: vec![],
+            expected_instructions: vec![
+                opcode::make(opcode::Opcode::OpTrue, &vec![]),
+                opcode::make(opcode::Opcode::OpFalse, &vec![]),
+                opcode::make(opcode::Opcode::OpNotEqual, &vec![]),
+            ],
+        },
     ];
 
     run_compiler_tests(tests)?;
@@ -75,10 +129,7 @@ pub fn test_constants(expected: &Vec<Object>, actual: &Vec<Rc<Object>>) {
     }
 }
 
-fn test_instructions(
-    expected: &Vec<opcode::Instructions>,
-    actual: &opcode::Instructions,
-) {
+fn test_instructions(expected: &Vec<opcode::Instructions>, actual: &opcode::Instructions) {
     let expected_ins = concat_instructions(expected);
 
     for (&exp, got) in expected_ins.0.iter().zip(actual.0.clone()) {
