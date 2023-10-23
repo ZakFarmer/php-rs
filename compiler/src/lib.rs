@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use anyhow::Error;
 use opcode::Opcode;
-use parser::ast::{Expression, IntegerLiteral, Literal, Node, Statement};
+use parser::ast::{Expression, IntegerLiteral, Literal, Node, Statement, BooleanLiteral};
 
 pub struct Bytecode {
     pub instructions: opcode::Instructions,
@@ -134,14 +134,31 @@ impl Compiler {
                     }
                 }
             }
-            Expression::Literal(Literal::Integer(IntegerLiteral { value, .. })) => {
-                let integer = object::Object::Integer(*value);
+            Expression::Literal(literal) => match literal {
+                Literal::Boolean(boolean) => match boolean {
+                    BooleanLiteral { value: true, .. } => {
+                        self.emit(opcode::Opcode::OpTrue, vec![]);
 
-                let constant = self.add_constant(integer);
+                        return Ok(());
+                    }
+                    BooleanLiteral { value: false, .. } => {
+                        self.emit(opcode::Opcode::OpFalse, vec![]);
 
-                self.emit(opcode::Opcode::OpConst, vec![constant]);
+                        return Ok(());
+                    }
+                }
+                Literal::Integer(IntegerLiteral { value, .. }) => {
+                    let integer = object::Object::Integer(*value);
 
-                return Ok(());
+                    let constant = self.add_constant(integer);
+
+                    self.emit(opcode::Opcode::OpConst, vec![constant]);
+
+                    return Ok(());
+                }
+                _ => {
+                    return Err(Error::msg("compile_expression: unimplemented"));
+                }
             }
             _ => {
                 return Err(Error::msg("compile_expression: unimplemented"));

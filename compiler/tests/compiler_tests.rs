@@ -14,6 +14,26 @@ struct CompilerTestCase {
 }
 
 #[test]
+fn test_boolean_expressions() -> Result<(), Error> {
+    let tests = vec![
+        CompilerTestCase {
+            input: "true".to_string(),
+            expected_constants: vec![],
+            expected_instructions: vec![opcode::make(opcode::Opcode::OpTrue, &vec![])],
+        },
+        CompilerTestCase {
+            input: "false".to_string(),
+            expected_constants: vec![],
+            expected_instructions: vec![opcode::make(opcode::Opcode::OpFalse, &vec![])],
+        },
+    ];
+
+    run_compiler_tests(tests)?;
+
+    Ok(())
+}
+
+#[test]
 fn test_integer_arithmetic() -> Result<(), Error> {
     let tests = vec![CompilerTestCase {
         input: "1 + 2".to_string(),
