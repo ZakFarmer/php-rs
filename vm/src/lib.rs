@@ -171,6 +171,37 @@ impl Vm {
                     self.stack_pointer -= 1;
                     self.stack[self.stack_pointer - 1] = Rc::new(result);
                 }
+                Opcode::OpBang => {
+                    let operand = self.pop();
+
+                    let result = match &*operand {
+                        Object::Boolean(boolean) => Object::Boolean(!boolean),
+                        Object::Integer(integer) => Object::Boolean(!integer == 0),
+                        _ => {
+                            return Err(Error::msg(format!(
+                                "unsupported type for negation: !{}",
+                                operand
+                            )));
+                        }
+                    };
+
+                    self.push(Rc::new(result));
+                }
+                Opcode::OpMinus => {
+                    let operand = self.pop();
+
+                    let result = match &*operand {
+                        Object::Integer(integer) => Object::Integer(-integer),
+                        _ => {
+                            return Err(Error::msg(format!(
+                                "unsupported type for negation: -{}",
+                                operand
+                            )));
+                        }
+                    };
+
+                    self.push(Rc::new(result));
+                }
                 _ => {
                     return Err(Error::msg(format!("unknown opcode: {}", op)));
                 }

@@ -139,6 +139,17 @@ impl Compiler {
 
                 Ok(())
             }
+            Expression::Prefix(prefix) => {
+                self.compile_expression(&prefix.right)?;
+
+                match prefix.operator.as_str() {
+                    "!" => self.emit(opcode::Opcode::OpBang, vec![]),
+                    "-" => self.emit(opcode::Opcode::OpMinus, vec![]),
+                    _ => return Err(Error::msg("compile_expression: unimplemented")),
+                };
+
+                Ok(())
+            }
             Expression::Literal(literal) => match literal {
                 Literal::Boolean(boolean) => match boolean {
                     BooleanLiteral { value: true, .. } => {
