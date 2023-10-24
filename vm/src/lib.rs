@@ -6,26 +6,42 @@ use compiler::Bytecode;
 use object::Object;
 use opcode::Opcode;
 
-const GLOBALS_SIZE: usize = 65536;
-const STACK_SIZE: usize = 2048;
+pub const GLOBALS_SIZE: usize = 65536;
+pub const STACK_SIZE: usize = 2048;
 
 pub struct Vm {
     constants: Vec<Rc<Object>>,
     instructions: opcode::Instructions,
 
-    globals: Vec<Rc<Object>>,
+    pub globals: Vec<Rc<Object>>,
 
     stack: Vec<Rc<Object>>,
     stack_pointer: usize,
 }
 
 impl Vm {
+    pub fn globals(&self) -> &Vec<Rc<Object>> {
+        &self.globals
+    }
+
     pub fn new(bytecode: Bytecode) -> Self {
         Self {
             constants: bytecode.constants,
             instructions: bytecode.instructions,
 
             globals: vec![Rc::new(Object::Null); GLOBALS_SIZE],
+
+            stack: vec![Rc::new(Object::Null); STACK_SIZE],
+            stack_pointer: 0,
+        }
+    }
+
+    pub fn new_with_globals_store(bytecode: Bytecode, globals: Vec<Rc<Object>>) -> Self {
+        Self {
+            constants: bytecode.constants,
+            instructions: bytecode.instructions,
+
+            globals: globals.clone(),
 
             stack: vec![Rc::new(Object::Null); STACK_SIZE],
             stack_pointer: 0,
@@ -80,6 +96,7 @@ impl Vm {
                 Opcode::OpConst => {
                     let const_index =
                         BigEndian::read_u16(&self.instructions.0[ip..ip + 2]) as usize;
+
                     ip += 2;
 
                     self.push(Rc::clone(&self.constants[const_index]));

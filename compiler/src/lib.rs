@@ -35,9 +35,9 @@ struct EmittedInstruction {
 
 pub struct Compiler {
     instructions: opcode::Instructions,
-    constants: Vec<Rc<object::Object>>,
+    pub constants: Vec<Rc<object::Object>>,
 
-    symbol_table: SymbolTable,
+    pub symbol_table: SymbolTable,
 
     last_instruction: Option<EmittedInstruction>,
     previous_instruction: Option<EmittedInstruction>,
@@ -51,6 +51,19 @@ impl Compiler {
             last_instruction: None,
             previous_instruction: None,
             symbol_table: SymbolTable::new(),
+        }
+    }
+
+    pub fn new_with_state(
+        constants: Vec<Rc<object::Object>>,
+        symbol_table: SymbolTable,
+    ) -> Self {
+        Self {
+            instructions: opcode::Instructions::default(),
+            constants,
+            last_instruction: None,
+            previous_instruction: None,
+            symbol_table,
         }
     }
 
@@ -129,7 +142,7 @@ impl Compiler {
             }
         }
 
-        return Ok(self.bytecode());
+        Ok(self.bytecode())
     }
 
     fn compile_block_statement(&mut self, block: &BlockStatement) -> Result<(), Error> {
@@ -137,7 +150,7 @@ impl Compiler {
             self.compile_statement(statement)?;
         }
 
-        return Ok(());
+        Ok(())
     }
 
     fn compile_statement(&mut self, s: &Statement) -> Result<(), Error> {
@@ -149,19 +162,19 @@ impl Compiler {
 
                 self.emit(Opcode::OpSetGlobal, vec![symbol.index]);
 
-                return Ok(());
+                Ok(())
             }
             Statement::Return(r) => {
                 self.compile_expression(&r.return_value)?;
 
-                return Ok(());
+                Ok(())
             }
             Statement::Expr(e) => {
                 self.compile_expression(e)?;
 
                 self.emit(Opcode::OpPop, vec![]);
 
-                return Ok(());
+                Ok(())
             }
             _ => {
                 return Err(Error::msg("compile_statement: unimplemented"));
@@ -205,7 +218,7 @@ impl Compiler {
                     }
                 }
 
-                return Ok(());
+                Ok(())
             }
             Expression::If(if_expression) => {
                 self.compile_expression(&if_expression.condition)?;
@@ -271,12 +284,12 @@ impl Compiler {
                     BooleanLiteral { value: true, .. } => {
                         self.emit(opcode::Opcode::OpTrue, vec![]);
 
-                        return Ok(());
+                        Ok(())
                     }
                     BooleanLiteral { value: false, .. } => {
                         self.emit(opcode::Opcode::OpFalse, vec![]);
 
-                        return Ok(());
+                        Ok(())
                     }
                 },
                 Literal::Integer(IntegerLiteral { value, .. }) => {
@@ -286,7 +299,7 @@ impl Compiler {
 
                     self.emit(opcode::Opcode::OpConst, vec![constant]);
 
-                    return Ok(());
+                    Ok(())
                 }
                 _ => {
                     return Err(Error::msg("compile_expression: unimplemented"));
