@@ -181,11 +181,7 @@ impl Compiler {
                 // dummy value that will be overwritten later
                 let jnt_position = self.emit(Opcode::OpJumpNotTruthy, vec![9999]);
 
-                dbg!(&self.instructions);
-
                 self.compile_block_statement(&if_expression.consequence)?;
-
-                dbg!(&self.instructions);
 
                 if self.last_instruction_is(Opcode::OpPop) {
                     self.remove_last_pop();
@@ -196,8 +192,7 @@ impl Compiler {
                 self.change_operand(jnt_position, after_consequence_position);
 
                 if if_expression.alternative.is_none() {
-                    let after_consequence_position = self.instructions.0.len();
-                    self.change_operand(jnt_position, after_consequence_position);
+                    self.emit(opcode::Opcode::OpNull, vec![]);
                 } else {
                     self.compile_block_statement(if_expression.alternative.as_ref().unwrap())?;
 

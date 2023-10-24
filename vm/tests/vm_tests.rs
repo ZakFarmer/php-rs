@@ -117,6 +117,10 @@ fn test_boolean_expressions() -> Result<(), Error> {
             input: "!!5".to_string(),
             expected: "true".to_string(),
         },
+        VmTestCase {
+            input: "!(if (false) { 5; })".to_string(),
+            expected: "true".to_string(),
+        }
     ];
 
     run_vm_tests(tests)?;
@@ -154,6 +158,14 @@ fn test_conditionals() -> Result<(), Error> {
         VmTestCase {
             input: "if (1 > 2) { 10 } else { 20 }".to_string(),
             expected: "20".to_string(),
+        },
+        VmTestCase {
+            input: "if (1 > 2) { 10 }".to_string(),
+            expected: "null".to_string(),
+        },
+        VmTestCase {
+            input: "if (false) { 10 }".to_string(),
+            expected: "null".to_string(),
         },
     ];
 

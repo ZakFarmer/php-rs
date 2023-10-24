@@ -53,6 +53,9 @@ impl Vm {
                         ip = jump_position;
                     }
                 }
+                Opcode::OpNull => {
+                    self.push(Rc::new(Object::Null));
+                }
                 Opcode::OpConst => {
                     let const_index =
                         BigEndian::read_u16(&self.instructions.0[ip..ip + 2]) as usize;
@@ -195,6 +198,7 @@ impl Vm {
                     let result = match &*operand {
                         Object::Boolean(boolean) => Object::Boolean(!boolean),
                         Object::Integer(integer) => Object::Boolean(!integer == 0),
+                        Object::Null => Object::Boolean(true),
                         _ => {
                             return Err(Error::msg(format!(
                                 "unsupported type for negation: !{}",
