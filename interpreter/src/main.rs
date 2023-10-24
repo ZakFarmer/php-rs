@@ -1,6 +1,6 @@
 use std::env;
 
-mod repl;
+pub mod repl;
 
 use anyhow::{Error, Result};
 use repl::init_repl;
