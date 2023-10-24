@@ -3,6 +3,7 @@ use std::rc::Rc;
 use anyhow::Error;
 use opcode::Opcode;
 use parser::ast::{BooleanLiteral, Expression, IntegerLiteral, Literal, Node, Statement, BlockStatement};
+use symbol_table::SymbolTable;
 
 pub mod symbol_table;
 
@@ -36,6 +37,8 @@ pub struct Compiler {
     instructions: opcode::Instructions,
     constants: Vec<Rc<object::Object>>,
 
+    symbol_table: SymbolTable,
+
     last_instruction: Option<EmittedInstruction>,
     previous_instruction: Option<EmittedInstruction>,
 }
@@ -47,6 +50,7 @@ impl Compiler {
             constants: Vec::new(),
             last_instruction: None,
             previous_instruction: None,
+            symbol_table: SymbolTable::new(),
         }
     }
 
@@ -141,6 +145,10 @@ impl Compiler {
             Statement::Assign(a) => {
                 self.compile_expression(&a.value)?;
 
+                let symbol = self.symbol_table.define(&a.name.value);
+
+                self.emit(Opcode::OpSetGlobal, vec![symbol.index]);
+
                 return Ok(());
             }
             Statement::Return(r) => {
@@ -182,6 +190,23 @@ impl Compiler {
 
     fn compile_expression(&mut self, e: &Expression) -> Result<(), Error> {
         match e {
+            Expression::Identifier(identifier) => {
+                let symbol = self.symbol_table.resolve(&identifier.value);
+
+                match symbol {
+                    Some(symbol) => {
+                        self.emit(Opcode::OpGetGlobal, vec![symbol.index]);
+                    }
+                    None => {
+                        return Err(Error::msg(format!(
+                            "undefined variable: {}",
+                            identifier.value
+                        )));
+                    }
+                }
+
+                return Ok(());
+            }
             Expression::If(if_expression) => {
                 self.compile_expression(&if_expression.condition)?;
 

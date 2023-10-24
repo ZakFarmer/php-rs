@@ -6,11 +6,14 @@ use compiler::Bytecode;
 use object::Object;
 use opcode::Opcode;
 
+const GLOBALS_SIZE: usize = 65536;
 const STACK_SIZE: usize = 2048;
 
 pub struct Vm {
     constants: Vec<Rc<Object>>,
     instructions: opcode::Instructions,
+
+    globals: Vec<Rc<Object>>,
 
     stack: Vec<Rc<Object>>,
     stack_pointer: usize,
@@ -21,6 +24,8 @@ impl Vm {
         Self {
             constants: bytecode.constants,
             instructions: bytecode.instructions,
+
+            globals: vec![Rc::new(Object::Null); GLOBALS_SIZE],
 
             stack: vec![Rc::new(Object::Null); STACK_SIZE],
             stack_pointer: 0,
@@ -52,6 +57,22 @@ impl Vm {
                     if !is_truthy(&condition) {
                         ip = jump_position;
                     }
+                }
+                Opcode::OpGetGlobal => {
+                    let global_index =
+                        BigEndian::read_u16(&self.instructions.0[ip..ip + 2]) as usize;
+
+                    ip += 2;
+
+                    self.push(Rc::clone(&self.globals[global_index]));
+                }
+                Opcode::OpSetGlobal => {
+                    let global_index =
+                        BigEndian::read_u16(&self.instructions.0[ip..ip + 2]) as usize;
+
+                    ip += 2;
+
+                    self.globals[global_index] = self.pop();
                 }
                 Opcode::OpNull => {
                     self.push(Rc::new(Object::Null));
