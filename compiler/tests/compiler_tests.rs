@@ -96,6 +96,43 @@ fn test_boolean_expressions() -> Result<(), Error> {
 }
 
 #[test]
+fn test_conditionals() -> Result<(), Error> {
+    let tests = vec![
+        CompilerTestCase { 
+            input: "if (true) { 10 }; 3333;".to_string(),
+            expected_constants: vec![Object::Integer(10), Object::Integer(3333)],
+            expected_instructions: vec![
+                opcode::make(opcode::Opcode::OpTrue, &vec![]),
+                opcode::make(opcode::Opcode::OpJumpNotTruthy, &vec![10]),
+                opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                opcode::make(opcode::Opcode::OpJump, &vec![10]),
+                opcode::make(opcode::Opcode::OpPop, &vec![]),
+                opcode::make(opcode::Opcode::OpConst, &vec![1]),
+                opcode::make(opcode::Opcode::OpPop, &vec![]),
+            ]
+        },
+        CompilerTestCase {
+            input: "if (true) { 10 } else { 20 }; 3333;".to_string(),
+            expected_constants: vec![Object::Integer(10), Object::Integer(20), Object::Integer(3333)],
+            expected_instructions: vec![
+                opcode::make(opcode::Opcode::OpTrue, &vec![]),
+                opcode::make(opcode::Opcode::OpJumpNotTruthy, &vec![10]),
+                opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                opcode::make(opcode::Opcode::OpJump, &vec![13]),
+                opcode::make(opcode::Opcode::OpConst, &vec![1]),
+                opcode::make(opcode::Opcode::OpPop, &vec![]),
+                opcode::make(opcode::Opcode::OpConst, &vec![2]),
+                opcode::make(opcode::Opcode::OpPop, &vec![]),
+            ]
+        }
+    ];
+
+    run_compiler_tests(tests)?;
+
+    Ok(())
+}
+
+#[test]
 fn test_integer_arithmetic() -> Result<(), Error> {
     let tests = vec![
         CompilerTestCase {

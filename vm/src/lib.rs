@@ -35,6 +35,24 @@ impl Vm {
             ip += 1;
 
             match op {
+                Opcode::OpJump => {
+                    let jump_position =
+                        BigEndian::read_u16(&self.instructions.0[ip..ip + 2]) as usize;
+
+                    ip = jump_position;
+                }
+                Opcode::OpJumpNotTruthy => {
+                    let jump_position =
+                        BigEndian::read_u16(&self.instructions.0[ip..ip + 2]) as usize;
+
+                    ip += 2;
+
+                    let condition = self.pop();
+
+                    if !is_truthy(&condition) {
+                        ip = jump_position;
+                    }
+                }
                 Opcode::OpConst => {
                     let const_index =
                         BigEndian::read_u16(&self.instructions.0[ip..ip + 2]) as usize;
@@ -227,5 +245,13 @@ impl Vm {
 
     pub fn stack_top(&self) -> Rc<Object> {
         Rc::clone(&self.stack[self.stack_pointer - 1])
+    }
+}
+
+fn is_truthy(object: &Object) -> bool {
+    match object {
+        Object::Boolean(boolean) => *boolean,
+        Object::Integer(integer) => *integer != 0,
+        _ => true,
     }
 }

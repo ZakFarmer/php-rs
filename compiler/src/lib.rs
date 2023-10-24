@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use anyhow::Error;
 use opcode::Opcode;
-use parser::ast::{BooleanLiteral, Expression, IntegerLiteral, Literal, Node, Statement};
+use parser::ast::{BooleanLiteral, Expression, IntegerLiteral, Literal, Node, Statement, BlockStatement};
 
 #[derive(Clone, PartialEq)]
 pub struct Bytecode {
@@ -24,9 +24,18 @@ impl std::fmt::Debug for Bytecode {
     }
 }
 
+#[derive(Debug, Clone)]
+struct EmittedInstruction {
+    opcode: opcode::Opcode,
+    position: usize,
+}
+
 pub struct Compiler {
     instructions: opcode::Instructions,
     constants: Vec<Rc<object::Object>>,
+
+    last_instruction: Option<EmittedInstruction>,
+    previous_instruction: Option<EmittedInstruction>,
 }
 
 impl Compiler {
@@ -34,6 +43,8 @@ impl Compiler {
         Self {
             instructions: opcode::Instructions::default(),
             constants: Vec::new(),
+            last_instruction: None,
+            previous_instruction: None,
         }
     }
 
@@ -43,12 +54,41 @@ impl Compiler {
         return (self.constants.len() - 1) as usize;
     }
 
+    fn change_operand(&mut self, position: usize, operand: usize) {
+        let op = Opcode::from(self.instructions.0[position]);
+
+        let new_instruction = opcode::make(op, &vec![operand]);
+
+        self.replace_instruction(position, new_instruction);
+    }
+
     fn add_instructions(&mut self, instructions: opcode::Instructions) -> usize {
         let position = self.instructions.0.len();
 
         self.instructions.0.extend(instructions.0);
 
         return position;
+    }
+
+    fn current_instructions(&self) -> &opcode::Instructions {
+        return &self.instructions;
+    }
+
+    fn replace_instruction(&mut self, position: usize, new_instruction: opcode::Instructions) {
+        for (i, instruction) in new_instruction.0.iter().enumerate() {
+            self.instructions.0[position + i] = *instruction;
+        }
+    }
+
+    fn set_last_instruction(&mut self, op: opcode::Opcode, position: usize) {
+        let previous = self.last_instruction.clone();
+
+        self.previous_instruction = previous;
+
+        self.last_instruction = Some(EmittedInstruction {
+            opcode: op,
+            position,
+        });
     }
 
     pub fn bytecode(&self) -> Bytecode {
@@ -61,7 +101,11 @@ impl Compiler {
     fn emit(&mut self, op: opcode::Opcode, operands: Vec<usize>) -> usize {
         let instructions = opcode::make(op, &operands);
 
-        self.add_instructions(instructions)
+        let index = self.add_instructions(instructions);
+        
+        self.set_last_instruction(op, index);
+
+        index
     }
 
     pub fn compile(&mut self, node: &Node) -> Result<Bytecode, Error> {
@@ -80,6 +124,14 @@ impl Compiler {
         }
 
         return Ok(self.bytecode());
+    }
+
+    fn compile_block_statement(&mut self, block: &BlockStatement) -> Result<(), Error> {
+        for statement in block.statements.iter() {
+            self.compile_statement(statement)?;
+        }
+
+        return Ok(());
     }
 
     fn compile_statement(&mut self, s: &Statement) -> Result<(), Error> {
@@ -123,10 +175,47 @@ impl Compiler {
 
     fn compile_expression(&mut self, e: &Expression) -> Result<(), Error> {
         match e {
-            Expression::Infix(infix) => {
-                self.compile_operands(&infix.left, &infix.right, &infix.operator)?;
+            Expression::If(if_expression) => {
+                self.compile_expression(&if_expression.condition)?;
 
-                match infix.operator.as_str() {
+                // dummy value that will be overwritten later
+                let jnt_position = self.emit(Opcode::OpJumpNotTruthy, vec![9999]);
+
+                dbg!(&self.instructions);
+
+                self.compile_block_statement(&if_expression.consequence)?;
+
+                dbg!(&self.instructions);
+
+                if self.last_instruction_is(Opcode::OpPop) {
+                    self.remove_last_pop();
+                }
+
+                let j_position = self.emit(Opcode::OpJump, vec![9999]);
+                let after_consequence_position = self.current_instructions().0.len();
+                self.change_operand(jnt_position, after_consequence_position);
+
+                if if_expression.alternative.is_none() {
+                    let after_consequence_position = self.instructions.0.len();
+                    self.change_operand(jnt_position, after_consequence_position);
+                } else {
+                    self.compile_block_statement(if_expression.alternative.as_ref().unwrap())?;
+
+                    if self.last_instruction_is(Opcode::OpPop) {
+                        self.remove_last_pop();
+                    }
+
+                }
+
+                let after_alternative_position = self.current_instructions().0.len();
+                self.change_operand(j_position, after_alternative_position);
+
+                Ok(())
+            }
+            Expression::Infix(infix_expression) => {
+                self.compile_operands(&infix_expression.left, &infix_expression.right, &infix_expression.operator)?;
+
+                match infix_expression.operator.as_str() {
                     "+" => self.emit(opcode::Opcode::OpAdd, vec![]),
                     "-" => self.emit(opcode::Opcode::OpSub, vec![]),
                     "*" => self.emit(opcode::Opcode::OpMul, vec![]),
@@ -139,10 +228,10 @@ impl Compiler {
 
                 Ok(())
             }
-            Expression::Prefix(prefix) => {
-                self.compile_expression(&prefix.right)?;
+            Expression::Prefix(prefix_expression) => {
+                self.compile_expression(&prefix_expression.right)?;
 
-                match prefix.operator.as_str() {
+                match prefix_expression.operator.as_str() {
                     "!" => self.emit(opcode::Opcode::OpBang, vec![]),
                     "-" => self.emit(opcode::Opcode::OpMinus, vec![]),
                     _ => return Err(Error::msg("compile_expression: unimplemented")),
@@ -150,7 +239,7 @@ impl Compiler {
 
                 Ok(())
             }
-            Expression::Literal(literal) => match literal {
+            Expression::Literal(literal_expression) => match literal_expression {
                 Literal::Boolean(boolean) => match boolean {
                     BooleanLiteral { value: true, .. } => {
                         self.emit(opcode::Opcode::OpTrue, vec![]);
@@ -180,5 +269,17 @@ impl Compiler {
                 return Err(Error::msg("compile_expression: unimplemented"));
             }
         }
+    }
+
+    fn last_instruction_is(&self, op: Opcode) -> bool {
+        match &self.last_instruction {
+            Some(instruction) => instruction.opcode == op,
+            None => false,
+        }
+    }
+
+    fn remove_last_pop(&mut self) {
+        self.instructions.0.pop();
+        self.last_instruction = self.previous_instruction.clone();
     }
 }

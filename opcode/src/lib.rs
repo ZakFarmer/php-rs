@@ -39,8 +39,33 @@ pub fn concat_instructions(expected: &Vec<Instructions>) -> Instructions {
     return out;
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Default, PartialEq, Eq)]
 pub struct Instructions(pub Vec<u8>);
+
+impl std::fmt::Debug for Instructions {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let mut instructions_string = String::new();
+        let mut i = 0;
+
+        while i < self.0.len() {
+            let op = self.0[i];
+            let _opcode = Opcode::from(op);
+            let definition = lookup(self.0[i].into());
+
+            let (operands, read) = read_operands(&definition, &self.0[i + 1..]);
+
+            instructions_string.push_str(&format!(
+                "{:04} {}\n",
+                i,
+                Self::format_instructions(&definition, &operands)
+            ));
+
+            i += 1 + read;
+        }
+
+        write!(f, "{}", instructions_string)
+    }
+}
 
 impl std::fmt::Display for Instructions {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {

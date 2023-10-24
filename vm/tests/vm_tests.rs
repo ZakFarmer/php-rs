@@ -125,6 +125,44 @@ fn test_boolean_expressions() -> Result<(), Error> {
 }
 
 #[test]
+fn test_conditionals() -> Result<(), Error> {
+    let tests = vec![
+        VmTestCase {
+            input: "if (true) { 10 }".to_string(),
+            expected: "10".to_string(),
+        },
+        VmTestCase {
+            input: "if (true) { 10 } else { 20 }".to_string(),
+            expected: "10".to_string(),
+        },
+        VmTestCase {
+            input: "if (false) { 10 } else { 20 }".to_string(),
+            expected: "20".to_string(),
+        },
+        VmTestCase {
+            input: "if (1) { 10 }".to_string(),
+            expected: "10".to_string(),
+        },
+        VmTestCase {
+            input: "if (1 < 2) { 10 }".to_string(),
+            expected: "10".to_string(),
+        },
+        VmTestCase {
+            input: "if (1 < 2) { 10 } else { 20 }".to_string(),
+            expected: "10".to_string(),
+        },
+        VmTestCase {
+            input: "if (1 > 2) { 10 } else { 20 }".to_string(),
+            expected: "20".to_string(),
+        },
+    ];
+
+    run_vm_tests(tests)?;
+
+    Ok(())
+}
+
+#[test]
 fn test_integer_arithmetic() -> Result<(), Error> {
     let tests = vec![
         VmTestCase {
