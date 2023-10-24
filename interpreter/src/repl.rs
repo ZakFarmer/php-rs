@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use anyhow::{Error, Result};
 
-use compiler::{Compiler, symbol_table::{self, SymbolTable}};
+use compiler::{symbol_table::SymbolTable, Compiler};
 use lexer::Lexer;
 
 use object::Object;
@@ -16,7 +16,7 @@ pub fn init_repl() -> Result<(), Error> {
     let mut rl = rustyline::DefaultEditor::new()?;
 
     let mut constants = vec![];
-    let mut globals = vec![Rc::new(Object::Null); GLOBALS_SIZE ];
+    let mut globals = vec![Rc::new(Object::Null); GLOBALS_SIZE];
     let mut symbol_table = SymbolTable::new();
 
     #[cfg(feature = "with-file-history")]
@@ -40,7 +40,7 @@ pub fn init_repl() -> Result<(), Error> {
                 parser.check_errors()?;
 
                 let mut compiler = Compiler::new_with_state(constants, symbol_table);
-                
+
                 match compiler.compile(&Node::Program(program)) {
                     Ok(bytecode) => {
                         let mut vm = Vm::new_with_globals_store(bytecode, globals);

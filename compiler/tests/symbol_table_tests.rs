@@ -5,17 +5,45 @@ use compiler::symbol_table::{Symbol, SymbolScope, SymbolTable};
 
 #[test]
 fn test_define() -> Result<(), Error> {
-    let expected = HashMap::from([
-        ("a".to_string(), Symbol {name: "a".to_string(), scope: SymbolScope::Global, index: 0}),
-        ("b".to_string(), Symbol {name: "b".to_string(), scope: SymbolScope::Global, index: 1}),
-        ("c".to_string(), Symbol {name: "c".to_string(), scope: SymbolScope::Global, index: 2}),
-        ("d".to_string(), Symbol {name: "d".to_string(), scope: SymbolScope::Global, index: 3}),
+    let _expected = HashMap::from([
+        (
+            "a".to_string(),
+            Symbol {
+                name: "a".to_string(),
+                scope: SymbolScope::Global,
+                index: 0,
+            },
+        ),
+        (
+            "b".to_string(),
+            Symbol {
+                name: "b".to_string(),
+                scope: SymbolScope::Global,
+                index: 1,
+            },
+        ),
+        (
+            "c".to_string(),
+            Symbol {
+                name: "c".to_string(),
+                scope: SymbolScope::Global,
+                index: 2,
+            },
+        ),
+        (
+            "d".to_string(),
+            Symbol {
+                name: "d".to_string(),
+                scope: SymbolScope::Global,
+                index: 3,
+            },
+        ),
     ]);
 
     let mut global = SymbolTable::new();
 
     let a = global.define("a");
-    
+
     if a.name != "a" {
         panic!("a.name not 'a'. got={}", a.name);
     }
@@ -37,8 +65,22 @@ fn test_resolve_global() -> Result<(), Error> {
     global.define("b");
 
     let expected = vec![
-        ("a".to_string(), Symbol {name: "a".to_string(), scope: SymbolScope::Global, index: 0}),
-        ("b".to_string(), Symbol {name: "b".to_string(), scope: SymbolScope::Global, index: 1}),
+        (
+            "a".to_string(),
+            Symbol {
+                name: "a".to_string(),
+                scope: SymbolScope::Global,
+                index: 0,
+            },
+        ),
+        (
+            "b".to_string(),
+            Symbol {
+                name: "b".to_string(),
+                scope: SymbolScope::Global,
+                index: 1,
+            },
+        ),
     ];
 
     for (name, expected_symbol) in expected {
@@ -51,7 +93,10 @@ fn test_resolve_global() -> Result<(), Error> {
         let symbol = symbol.unwrap();
 
         if symbol.name != expected_symbol.name {
-            panic!("symbol.name not {}. got={}", expected_symbol.name, symbol.name);
+            panic!(
+                "symbol.name not {}. got={}",
+                expected_symbol.name, symbol.name
+            );
         }
     }
 

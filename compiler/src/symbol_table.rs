@@ -24,13 +24,11 @@ pub struct SymbolTable {
 
 impl SymbolTable {
     pub fn define(&mut self, name: &str) -> Rc<Symbol> {
-        let symbol = Rc::new(
-            Symbol {
-                name: name.to_string(),
-                scope: SymbolScope::Global,
-                index: self.num_definitions,
-            }
-        );
+        let symbol = Rc::new(Symbol {
+            name: name.to_string(),
+            scope: SymbolScope::Global,
+            index: self.num_definitions,
+        });
 
         self.store.insert(name.to_string(), Rc::clone(&symbol));
 

@@ -2,7 +2,9 @@ use std::rc::Rc;
 
 use anyhow::Error;
 use opcode::Opcode;
-use parser::ast::{BooleanLiteral, Expression, IntegerLiteral, Literal, Node, Statement, BlockStatement};
+use parser::ast::{
+    BlockStatement, BooleanLiteral, Expression, IntegerLiteral, Literal, Node, Statement,
+};
 use symbol_table::SymbolTable;
 
 pub mod symbol_table;
@@ -54,10 +56,7 @@ impl Compiler {
         }
     }
 
-    pub fn new_with_state(
-        constants: Vec<Rc<object::Object>>,
-        symbol_table: SymbolTable,
-    ) -> Self {
+    pub fn new_with_state(constants: Vec<Rc<object::Object>>, symbol_table: SymbolTable) -> Self {
         Self {
             instructions: opcode::Instructions::default(),
             constants,
@@ -121,7 +120,7 @@ impl Compiler {
         let instructions = opcode::make(op, &operands);
 
         let index = self.add_instructions(instructions);
-        
+
         self.set_last_instruction(op, index);
 
         index
@@ -244,7 +243,6 @@ impl Compiler {
                     if self.last_instruction_is(Opcode::OpPop) {
                         self.remove_last_pop();
                     }
-
                 }
 
                 let after_alternative_position = self.current_instructions().0.len();
@@ -253,7 +251,11 @@ impl Compiler {
                 Ok(())
             }
             Expression::Infix(infix_expression) => {
-                self.compile_operands(&infix_expression.left, &infix_expression.right, &infix_expression.operator)?;
+                self.compile_operands(
+                    &infix_expression.left,
+                    &infix_expression.right,
+                    &infix_expression.operator,
+                )?;
 
                 match infix_expression.operator.as_str() {
                     "+" => self.emit(opcode::Opcode::OpAdd, vec![]),

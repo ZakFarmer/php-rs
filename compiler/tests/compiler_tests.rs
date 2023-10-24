@@ -98,7 +98,7 @@ fn test_boolean_expressions() -> Result<(), Error> {
 #[test]
 fn test_conditionals() -> Result<(), Error> {
     let tests = vec![
-        CompilerTestCase { 
+        CompilerTestCase {
             input: "if (true) { 10 }; 3333;".to_string(),
             expected_constants: vec![Object::Integer(10), Object::Integer(3333)],
             expected_instructions: vec![
@@ -110,11 +110,15 @@ fn test_conditionals() -> Result<(), Error> {
                 opcode::make(opcode::Opcode::OpPop, &vec![]),
                 opcode::make(opcode::Opcode::OpConst, &vec![1]),
                 opcode::make(opcode::Opcode::OpPop, &vec![]),
-            ]
+            ],
         },
         CompilerTestCase {
             input: "if (true) { 10 } else { 20 }; 3333;".to_string(),
-            expected_constants: vec![Object::Integer(10), Object::Integer(20), Object::Integer(3333)],
+            expected_constants: vec![
+                Object::Integer(10),
+                Object::Integer(20),
+                Object::Integer(3333),
+            ],
             expected_instructions: vec![
                 opcode::make(opcode::Opcode::OpTrue, &vec![]),
                 opcode::make(opcode::Opcode::OpJumpNotTruthy, &vec![10]),
@@ -124,8 +128,8 @@ fn test_conditionals() -> Result<(), Error> {
                 opcode::make(opcode::Opcode::OpPop, &vec![]),
                 opcode::make(opcode::Opcode::OpConst, &vec![2]),
                 opcode::make(opcode::Opcode::OpPop, &vec![]),
-            ]
-        }
+            ],
+        },
     ];
 
     run_compiler_tests(tests)?;
@@ -140,10 +144,10 @@ fn test_integer_arithmetic() -> Result<(), Error> {
             input: "1 + 2".to_string(),
             expected_constants: vec![Object::Integer(1), Object::Integer(2)],
             expected_instructions: vec![
-             opcode::make(opcode::Opcode::OpConst, &vec![0]),
-             opcode::make(opcode::Opcode::OpConst, &vec![1]),
-             opcode::make(opcode::Opcode::OpAdd, &vec![1]),
-             opcode::make(opcode::Opcode::OpPop, &vec![0]),
+                opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                opcode::make(opcode::Opcode::OpConst, &vec![1]),
+                opcode::make(opcode::Opcode::OpAdd, &vec![1]),
+                opcode::make(opcode::Opcode::OpPop, &vec![0]),
             ],
         },
         CompilerTestCase {
@@ -154,7 +158,7 @@ fn test_integer_arithmetic() -> Result<(), Error> {
                 opcode::make(opcode::Opcode::OpConst, &vec![1]),
                 opcode::make(opcode::Opcode::OpSub, &vec![1]),
                 opcode::make(opcode::Opcode::OpPop, &vec![0]),
-            ]
+            ],
         },
         CompilerTestCase {
             input: "2 * 4".to_string(),
@@ -163,8 +167,8 @@ fn test_integer_arithmetic() -> Result<(), Error> {
                 opcode::make(opcode::Opcode::OpConst, &vec![0]),
                 opcode::make(opcode::Opcode::OpConst, &vec![1]),
                 opcode::make(opcode::Opcode::OpMul, &vec![1]),
-                opcode::make(opcode::Opcode::OpPop, &vec![0])
-            ]
+                opcode::make(opcode::Opcode::OpPop, &vec![0]),
+            ],
         },
         CompilerTestCase {
             input: "4 / 2".to_string(),
@@ -173,8 +177,8 @@ fn test_integer_arithmetic() -> Result<(), Error> {
                 opcode::make(opcode::Opcode::OpConst, &vec![0]),
                 opcode::make(opcode::Opcode::OpConst, &vec![1]),
                 opcode::make(opcode::Opcode::OpDiv, &vec![1]),
-                opcode::make(opcode::Opcode::OpPop, &vec![0])
-            ]
+                opcode::make(opcode::Opcode::OpPop, &vec![0]),
+            ],
         },
         CompilerTestCase {
             input: "-1".to_string(),
@@ -182,8 +186,8 @@ fn test_integer_arithmetic() -> Result<(), Error> {
             expected_instructions: vec![
                 opcode::make(opcode::Opcode::OpConst, &vec![0]),
                 opcode::make(opcode::Opcode::OpMinus, &vec![]),
-                opcode::make(opcode::Opcode::OpPop, &vec![0])
-            ]
+                opcode::make(opcode::Opcode::OpPop, &vec![0]),
+            ],
         },
     ];
 

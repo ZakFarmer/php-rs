@@ -120,7 +120,7 @@ fn test_boolean_expressions() -> Result<(), Error> {
         VmTestCase {
             input: "!(if (false) { 5; })".to_string(),
             expected: "true".to_string(),
-        }
+        },
     ];
 
     run_vm_tests(tests)?;
