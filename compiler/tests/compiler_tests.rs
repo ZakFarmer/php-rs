@@ -89,16 +89,48 @@ fn test_boolean_expressions() -> Result<(), Error> {
 
 #[test]
 fn test_integer_arithmetic() -> Result<(), Error> {
-    let tests = vec![CompilerTestCase {
-        input: "1 + 2".to_string(),
-        expected_constants: vec![Object::Integer(1), Object::Integer(2)],
-        expected_instructions: vec![
-            opcode::make(opcode::Opcode::OpConst, &vec![0]),
-            opcode::make(opcode::Opcode::OpConst, &vec![1]),
-            opcode::make(opcode::Opcode::OpAdd, &vec![1]),
-            opcode::make(opcode::Opcode::OpPop, &vec![0]),
-        ],
-    }];
+    let tests = vec![
+        CompilerTestCase {
+            input: "1 + 2".to_string(),
+            expected_constants: vec![Object::Integer(1), Object::Integer(2)],
+            expected_instructions: vec![
+             opcode::make(opcode::Opcode::OpConst, &vec![0]),
+             opcode::make(opcode::Opcode::OpConst, &vec![1]),
+             opcode::make(opcode::Opcode::OpAdd, &vec![1]),
+             opcode::make(opcode::Opcode::OpPop, &vec![0]),
+            ],
+        },
+        CompilerTestCase {
+            input: "2 - 1".to_string(),
+            expected_constants: vec![Object::Integer(2), Object::Integer(1)],
+            expected_instructions: vec![
+                opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                opcode::make(opcode::Opcode::OpConst, &vec![1]),
+                opcode::make(opcode::Opcode::OpSub, &vec![1]),
+                opcode::make(opcode::Opcode::OpPop, &vec![0]),
+            ]
+        },
+        CompilerTestCase {
+            input: "2 * 4".to_string(),
+            expected_constants: vec![Object::Integer(2), Object::Integer(4)],
+            expected_instructions: vec![
+                opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                opcode::make(opcode::Opcode::OpConst, &vec![1]),
+                opcode::make(opcode::Opcode::OpMul, &vec![1]),
+                opcode::make(opcode::Opcode::OpPop, &vec![0])
+            ]
+        },
+        CompilerTestCase {
+            input: "4 / 2".to_string(),
+            expected_constants: vec![Object::Integer(4), Object::Integer(2)],
+            expected_instructions: vec![
+                opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                opcode::make(opcode::Opcode::OpConst, &vec![1]),
+                opcode::make(opcode::Opcode::OpDiv, &vec![1]),
+                opcode::make(opcode::Opcode::OpPop, &vec![0])
+            ]
+        },
+    ];
 
     run_compiler_tests(tests)?;
 
