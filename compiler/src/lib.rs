@@ -4,6 +4,8 @@ use anyhow::Error;
 use opcode::Opcode;
 use parser::ast::{BooleanLiteral, Expression, IntegerLiteral, Literal, Node, Statement, BlockStatement};
 
+pub mod symbol_table;
+
 #[derive(Clone, PartialEq)]
 pub struct Bytecode {
     pub instructions: opcode::Instructions,
@@ -136,6 +138,11 @@ impl Compiler {
 
     fn compile_statement(&mut self, s: &Statement) -> Result<(), Error> {
         match s {
+            Statement::Assign(a) => {
+                self.compile_expression(&a.value)?;
+
+                return Ok(());
+            }
             Statement::Return(r) => {
                 self.compile_expression(&r.return_value)?;
 

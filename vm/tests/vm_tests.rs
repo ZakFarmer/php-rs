@@ -227,3 +227,25 @@ fn test_integer_arithmetic() -> Result<(), Error> {
 
     Ok(())
 }
+
+#[test]
+fn test_global_dollar_statements() -> Result<(), Error> {
+    let tests = vec![
+        VmTestCase {
+            input: "$one = 1; $one".to_string(),
+            expected: "1".to_string(),
+        },
+        VmTestCase {
+            input: "$one = 1; $two = 2; $one + $two".to_string(),
+            expected: "3".to_string(),
+        },
+        VmTestCase {
+            input: "$one = 1; $two = $one + $one; $one + $two".to_string(),
+            expected: "3".to_string(),
+        },
+    ];
+
+    run_vm_tests(tests)?;
+
+    Ok(())
+}
