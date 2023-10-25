@@ -107,6 +107,7 @@ impl Vm {
 
                     let result = match (&*left, &*right) {
                         (Object::Integer(l), Object::Integer(r)) => Object::Integer(l + r),
+                        (Object::String(l), Object::String(r)) => Object::String(format!("{}{}", l, r)),
                         _ => {
                             return Err(Error::msg(format!(
                                 "unsupported types for addition: {} + {}",

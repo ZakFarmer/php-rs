@@ -249,3 +249,25 @@ fn test_global_dollar_statements() -> Result<(), Error> {
 
     Ok(())
 }
+
+#[test]
+fn test_string_expressions() -> Result<(), Error> {
+    let tests = vec![
+        VmTestCase {
+            input: r#""hello""#.to_string(),
+            expected: "hello".to_string(),
+        },
+        VmTestCase {
+            input: r#""hello" + "world""#.to_string(),
+            expected: "helloworld".to_string(),
+        },
+        VmTestCase {
+            input: r#""hello" + "world" + "!""#.to_string(),
+            expected: "helloworld!".to_string(),
+        },
+    ];
+
+    run_vm_tests(tests)?;
+
+    Ok(())
+}

@@ -196,6 +196,37 @@ fn test_integer_arithmetic() -> Result<(), Error> {
     Ok(())
 }
 
+#[test]
+fn test_string_expressions() -> Result<(), Error> {
+    let tests = vec![
+        CompilerTestCase {
+            input: "\"hello\"".to_string(),
+            expected_constants: vec![Object::String("hello".to_string())],
+            expected_instructions: vec![
+                opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                opcode::make(opcode::Opcode::OpPop, &vec![]),
+            ],
+        },
+        CompilerTestCase {
+            input: "\"hello\" + \"world\"".to_string(),
+            expected_constants: vec![
+                Object::String("hello".to_string()),
+                Object::String("world".to_string()),
+            ],
+            expected_instructions: vec![
+                opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                opcode::make(opcode::Opcode::OpConst, &vec![1]),
+                opcode::make(opcode::Opcode::OpAdd, &vec![1]),
+                opcode::make(opcode::Opcode::OpPop, &vec![0]),
+            ]
+        }
+    ];
+
+    run_compiler_tests(tests)?;
+
+    Ok(())
+}
+
 fn run_compiler_tests(tests: Vec<CompilerTestCase>) -> Result<(), Error> {
     for test in tests {
         let mut parser = parser::Parser::new(Lexer::new(&test.input));
