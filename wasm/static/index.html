@@ -2,30 +2,37 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PHP Interpreter in Rust</title>
-    <style>
-      /* Style for the terminal-like look */
+    <!-- Tailwind CSS via CDN -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <style type="text/css">
+      #output::-webkit-scrollbar {
+        display: none;
+      }
+
       #output {
-        width: 600px;
-        height: 300px;
-        background-color: black;
-        color: lime;
-        padding: 10px;
-        font-family: "Courier New", Courier, monospace;
-        white-space: pre-wrap;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
       }
     </style>
   </head>
-  <body>
-    <textarea
-      id="input"
-      placeholder="Enter your PHP code here..."
-      rows="10"
-      cols="50"
-    ></textarea>
-    <br />
-    <button id="run-button">Run</button>
-    <div id="output"></div>
-    <script src="./index.js"></script>
+  <body class="bg-black text-green-400 font-mono h-screen overflow-hidden">
+    <div class="h-full flex flex-col">
+      <div
+        id="output"
+        class="flex-grow p-4 overflow-y-scroll whitespace-pre-wrap"
+      ></div>
+      <textarea
+        id="input"
+        rows="3"
+        class="p-4 w-full bg-gray-800 resize-none placeholder-gray-600 focus:outline-none"
+        placeholder="Enter your PHP code here..."
+      ></textarea>
+    </div>
+    <script src="index.js"></script>
   </body>
 </html>

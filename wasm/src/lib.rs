@@ -1,7 +1,10 @@
-use compiler::Compiler;
+use std::rc::Rc;
+
+use compiler::{Compiler, symbol_table::SymbolTable};
 use lexer::Lexer;
+use object::Object;
 use parser::{Parser, ast::Node};
-use vm::Vm;
+use vm::{Vm, GLOBALS_SIZE};
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 use web_sys::console;
 
@@ -9,58 +12,66 @@ use web_sys::console;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
+pub struct ExecutionState {
+    pub constants: Vec<Rc<Object>>,
+    pub globals: Vec<Rc<Object>>,
+    pub symbol_table: SymbolTable,
+}
+
+impl ExecutionState {
+    pub fn new() -> Self {
+        Self {
+            constants: vec![],
+            globals: vec![Rc::new(Object::Null); GLOBALS_SIZE],
+            symbol_table: SymbolTable::new(),
+        }
+    }
+}
+
+static mut CURRENT_EXECUTION_STATE: Option<ExecutionState> = None;
+
 #[wasm_bindgen(start)]
 pub fn main_js() -> Result<(), JsValue> {
-    #[cfg(debug_assertions)]
     console_error_panic_hook::set_once();
-
-    let input = "$a = 1; $b = 2; $c = $a + $b; $c;";
-
-    console::log_1(&JsValue::from_str(&format!("Input: {}", input)));
-
-    let result = parse(input);
-
-    console::log_1(&JsValue::from_str(&format!("Result: {}", result)));
 
     Ok(())
 }
 
 #[wasm_bindgen]
-pub fn compile(input: &str) -> String {
+pub fn init_state() {
+    unsafe {
+        CURRENT_EXECUTION_STATE = Some(ExecutionState::new());
+    }
+}
+
+fn execute(input: &str, state: &mut ExecutionState) -> Result<String, String> {
     let lexer = Lexer::new(input);
     let mut parser = Parser::new(lexer);
-
-    let program = parser.parse_program().unwrap();
-    parser.check_errors().unwrap();
-
-    let mut compiler = Compiler::new();
-
-    let bytecode = compiler.compile(&Node::Program(program)).unwrap();
-
-    format!("{:?}", bytecode)
+    let program = parser.parse_program().map_err(|e| format!("Error parsing: {}", e))?;
+    parser.check_errors().map_err(|e| format!("Parsing error: {}", e))?;
+    
+    let mut compiler = Compiler::new_with_state(state.constants.clone(), state.symbol_table.clone());
+    let bytecode = compiler.compile(&Node::Program(program)).map_err(|e| format!("Compilation error: {}", e))?;
+    
+    let mut vm = Vm::new_with_globals_store(bytecode, state.globals.clone());
+    vm.run().map_err(|e| format!("VM run error: {}", e))?;
+    
+    // Persist the updated state back to CURRENT_EXECUTION_STATE
+    state.constants = compiler.constants;
+    state.symbol_table = compiler.symbol_table;
+    state.globals = vm.globals.clone();
+    
+    Ok(vm.last_popped_stack_elem().to_string())
 }
 
 #[wasm_bindgen]
 pub fn parse(input: &str) -> String {
-    let lexer = Lexer::new(input);
-    let mut parser = Parser::new(lexer);
-
-    let program = parser.parse_program().unwrap();
-    parser.check_errors().unwrap();
-
-    let mut compiler = Compiler::new();
-
-    let bytecode = compiler.compile(&Node::Program(program)).unwrap();
-
-    let mut vm = Vm::new(bytecode);
-
-    match vm.run() {
-        Ok(_) => {
-            let last_popped = vm.last_popped_stack_elem();
-            last_popped.to_string()
-        }
-        Err(err) => {
-            format!("Error: {}", err)
-        }
+    let state = unsafe {
+        CURRENT_EXECUTION_STATE.as_mut().expect("State not initialized!")
+    };
+    
+    match execute(input, state) {
+        Ok(result) => result,
+        Err(error) => error,
     }
 }

@@ -493,6 +493,7 @@ dependencies = [
  "compiler",
  "console_error_panic_hook",
  "lexer",
+ "object",
  "parser",
  "vm",
  "wasm-bindgen",
