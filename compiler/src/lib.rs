@@ -3,7 +3,7 @@ use std::rc::Rc;
 use anyhow::Error;
 use opcode::Opcode;
 use parser::ast::{
-    BlockStatement, BooleanLiteral, Expression, IntegerLiteral, Literal, Node, Statement,
+    BlockStatement, BooleanLiteral, Expression, IntegerLiteral, Literal, Node, Statement, StringLiteral,
 };
 use symbol_table::SymbolTable;
 
@@ -298,6 +298,15 @@ impl Compiler {
                     let integer = object::Object::Integer(*value);
 
                     let constant = self.add_constant(integer);
+
+                    self.emit(opcode::Opcode::OpConst, vec![constant]);
+
+                    Ok(())
+                }
+                Literal::String(StringLiteral { value, .. }) => {
+                    let string = object::Object::String(value.clone());
+
+                    let constant = self.add_constant(string);
 
                     self.emit(opcode::Opcode::OpConst, vec![constant]);
 
