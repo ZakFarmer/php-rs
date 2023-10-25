@@ -1,2 +1,2 @@
 [workspace]
-members = [    "opcode",     "compiler",    "lexer",    "parser",    "evaluator",    "object",    "interpreter",    "vm"]
+members = [    "opcode",     "compiler",    "lexer",    "parser",    "evaluator",    "object",    "interpreter",    "vm",    "wasm"]

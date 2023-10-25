@@ -1,0 +1,30 @@
+{
+  "name": "phprs-wasm",
+  "version": "0.1.0",
+  "description": "WASM implementation of php-rs",
+  "main": "bootstrap.js",
+  "scripts": {
+    "start": "webpack serve",
+    "build": "webpack"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ZakFarmer/php-rs.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ZakFarmer/php-rs/issues"
+  },
+  "homepage": "https://github.com/ZakFarmer/php-rs#readme",
+  "devDependencies": {
+    "html-webpack-plugin": "^5.5.3",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1"
+  },
+  "dependencies": {
+    "@wasm-tool/wasm-pack-plugin": "^1.7.0",
+    "copy-webpack-plugin": "^11.0.0"
+  }
+}

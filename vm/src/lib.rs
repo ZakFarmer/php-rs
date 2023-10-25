@@ -6,21 +6,42 @@ use compiler::Bytecode;
 use object::Object;
 use opcode::Opcode;
 
-const STACK_SIZE: usize = 2048;
+pub const GLOBALS_SIZE: usize = 65536;
+pub const STACK_SIZE: usize = 2048;
 
 pub struct Vm {
     constants: Vec<Rc<Object>>,
     instructions: opcode::Instructions,
+
+    pub globals: Vec<Rc<Object>>,
 
     stack: Vec<Rc<Object>>,
     stack_pointer: usize,
 }
 
 impl Vm {
+    pub fn globals(&self) -> &Vec<Rc<Object>> {
+        &self.globals
+    }
+
     pub fn new(bytecode: Bytecode) -> Self {
         Self {
             constants: bytecode.constants,
             instructions: bytecode.instructions,
+
+            globals: vec![Rc::new(Object::Null); GLOBALS_SIZE],
+
+            stack: vec![Rc::new(Object::Null); STACK_SIZE],
+            stack_pointer: 0,
+        }
+    }
+
+    pub fn new_with_globals_store(bytecode: Bytecode, globals: Vec<Rc<Object>>) -> Self {
+        Self {
+            constants: bytecode.constants,
+            instructions: bytecode.instructions,
+
+            globals: globals.clone(),
 
             stack: vec![Rc::new(Object::Null); STACK_SIZE],
             stack_pointer: 0,
@@ -35,9 +56,47 @@ impl Vm {
             ip += 1;
 
             match op {
+                Opcode::OpJump => {
+                    let jump_position =
+                        BigEndian::read_u16(&self.instructions.0[ip..ip + 2]) as usize;
+
+                    ip = jump_position;
+                }
+                Opcode::OpJumpNotTruthy => {
+                    let jump_position =
+                        BigEndian::read_u16(&self.instructions.0[ip..ip + 2]) as usize;
+
+                    ip += 2;
+
+                    let condition = self.pop();
+
+                    if !is_truthy(&condition) {
+                        ip = jump_position;
+                    }
+                }
+                Opcode::OpGetGlobal => {
+                    let global_index =
+                        BigEndian::read_u16(&self.instructions.0[ip..ip + 2]) as usize;
+
+                    ip += 2;
+
+                    self.push(Rc::clone(&self.globals[global_index]));
+                }
+                Opcode::OpSetGlobal => {
+                    let global_index =
+                        BigEndian::read_u16(&self.instructions.0[ip..ip + 2]) as usize;
+
+                    ip += 2;
+
+                    self.globals[global_index] = self.pop();
+                }
+                Opcode::OpNull => {
+                    self.push(Rc::new(Object::Null));
+                }
                 Opcode::OpConst => {
                     let const_index =
                         BigEndian::read_u16(&self.instructions.0[ip..ip + 2]) as usize;
+
                     ip += 2;
 
                     self.push(Rc::clone(&self.constants[const_index]));
@@ -171,6 +230,38 @@ impl Vm {
                     self.stack_pointer -= 1;
                     self.stack[self.stack_pointer - 1] = Rc::new(result);
                 }
+                Opcode::OpBang => {
+                    let operand = self.pop();
+
+                    let result = match &*operand {
+                        Object::Boolean(boolean) => Object::Boolean(!boolean),
+                        Object::Integer(integer) => Object::Boolean(!integer == 0),
+                        Object::Null => Object::Boolean(true),
+                        _ => {
+                            return Err(Error::msg(format!(
+                                "unsupported type for negation: !{}",
+                                operand
+                            )));
+                        }
+                    };
+
+                    self.push(Rc::new(result));
+                }
+                Opcode::OpMinus => {
+                    let operand = self.pop();
+
+                    let result = match &*operand {
+                        Object::Integer(integer) => Object::Integer(-integer),
+                        _ => {
+                            return Err(Error::msg(format!(
+                                "unsupported type for negation: -{}",
+                                operand
+                            )));
+                        }
+                    };
+
+                    self.push(Rc::new(result));
+                }
                 _ => {
                     return Err(Error::msg(format!("unknown opcode: {}", op)));
                 }
@@ -196,5 +287,13 @@ impl Vm {
 
     pub fn stack_top(&self) -> Rc<Object> {
         Rc::clone(&self.stack[self.stack_pointer - 1])
+    }
+}
+
+fn is_truthy(object: &Object) -> bool {
+    match object {
+        Object::Boolean(boolean) => *boolean,
+        Object::Integer(integer) => *integer != 0,
+        _ => true,
     }
 }

@@ -41,6 +41,132 @@ fn test_boolean_expressions() -> Result<(), Error> {
             input: "false".to_string(),
             expected: "false".to_string(),
         },
+        VmTestCase {
+            input: "1 < 2".to_string(),
+            expected: "true".to_string(),
+        },
+        VmTestCase {
+            input: "1 > 2".to_string(),
+            expected: "false".to_string(),
+        },
+        VmTestCase {
+            input: "1 < 1".to_string(),
+            expected: "false".to_string(),
+        },
+        VmTestCase {
+            input: "1 > 1".to_string(),
+            expected: "false".to_string(),
+        },
+        VmTestCase {
+            input: "1 == 1".to_string(),
+            expected: "true".to_string(),
+        },
+        VmTestCase {
+            input: "1 != 1".to_string(),
+            expected: "false".to_string(),
+        },
+        VmTestCase {
+            input: "1 == 2".to_string(),
+            expected: "false".to_string(),
+        },
+        VmTestCase {
+            input: "1 != 2".to_string(),
+            expected: "true".to_string(),
+        },
+        VmTestCase {
+            input: "true == true".to_string(),
+            expected: "true".to_string(),
+        },
+        VmTestCase {
+            input: "false == false".to_string(),
+            expected: "true".to_string(),
+        },
+        VmTestCase {
+            input: "true == false".to_string(),
+            expected: "false".to_string(),
+        },
+        VmTestCase {
+            input: "true != false".to_string(),
+            expected: "true".to_string(),
+        },
+        VmTestCase {
+            input: "false != true".to_string(),
+            expected: "true".to_string(),
+        },
+        VmTestCase {
+            input: "!true".to_string(),
+            expected: "false".to_string(),
+        },
+        VmTestCase {
+            input: "!false".to_string(),
+            expected: "true".to_string(),
+        },
+        VmTestCase {
+            input: "!5".to_string(),
+            expected: "false".to_string(),
+        },
+        VmTestCase {
+            input: "!!true".to_string(),
+            expected: "true".to_string(),
+        },
+        VmTestCase {
+            input: "!!false".to_string(),
+            expected: "false".to_string(),
+        },
+        VmTestCase {
+            input: "!!5".to_string(),
+            expected: "true".to_string(),
+        },
+        VmTestCase {
+            input: "!(if (false) { 5; })".to_string(),
+            expected: "true".to_string(),
+        },
+    ];
+
+    run_vm_tests(tests)?;
+
+    Ok(())
+}
+
+#[test]
+fn test_conditionals() -> Result<(), Error> {
+    let tests = vec![
+        VmTestCase {
+            input: "if (true) { 10 }".to_string(),
+            expected: "10".to_string(),
+        },
+        VmTestCase {
+            input: "if (true) { 10 } else { 20 }".to_string(),
+            expected: "10".to_string(),
+        },
+        VmTestCase {
+            input: "if (false) { 10 } else { 20 }".to_string(),
+            expected: "20".to_string(),
+        },
+        VmTestCase {
+            input: "if (1) { 10 }".to_string(),
+            expected: "10".to_string(),
+        },
+        VmTestCase {
+            input: "if (1 < 2) { 10 }".to_string(),
+            expected: "10".to_string(),
+        },
+        VmTestCase {
+            input: "if (1 < 2) { 10 } else { 20 }".to_string(),
+            expected: "10".to_string(),
+        },
+        VmTestCase {
+            input: "if (1 > 2) { 10 } else { 20 }".to_string(),
+            expected: "20".to_string(),
+        },
+        VmTestCase {
+            input: "if (1 > 2) { 10 }".to_string(),
+            expected: "null".to_string(),
+        },
+        VmTestCase {
+            input: "if (false) { 10 }".to_string(),
+            expected: "null".to_string(),
+        },
     ];
 
     run_vm_tests(tests)?;
@@ -78,6 +204,44 @@ fn test_integer_arithmetic() -> Result<(), Error> {
         VmTestCase {
             input: "50 / 2 * 2 + 10 - 5".to_string(),
             expected: "55".to_string(),
+        },
+        VmTestCase {
+            input: "-5".to_string(),
+            expected: "-5".to_string(),
+        },
+        VmTestCase {
+            input: "-10".to_string(),
+            expected: "-10".to_string(),
+        },
+        VmTestCase {
+            input: "-50 + 100 + -50".to_string(),
+            expected: "0".to_string(),
+        },
+        VmTestCase {
+            input: "(5 + 10 * 2 + 15 / 3) * 2 + -10".to_string(),
+            expected: "50".to_string(),
+        },
+    ];
+
+    run_vm_tests(tests)?;
+
+    Ok(())
+}
+
+#[test]
+fn test_global_dollar_statements() -> Result<(), Error> {
+    let tests = vec![
+        VmTestCase {
+            input: "$one = 1; $one".to_string(),
+            expected: "1".to_string(),
+        },
+        VmTestCase {
+            input: "$one = 1; $two = 2; $one + $two".to_string(),
+            expected: "3".to_string(),
+        },
+        VmTestCase {
+            input: "$one = 1; $two = $one + $one; $one + $two".to_string(),
+            expected: "3".to_string(),
         },
     ];
 
