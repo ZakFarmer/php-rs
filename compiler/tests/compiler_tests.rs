@@ -4,7 +4,7 @@ use anyhow::Error;
 use compiler::Compiler;
 use lexer::Lexer;
 use object::Object;
-use opcode::concat_instructions;
+use opcode::{concat_instructions, Instructions};
 use parser::ast::Node;
 
 struct CompilerTestCase {
@@ -153,6 +153,44 @@ fn test_boolean_expressions() -> Result<(), Error> {
 }
 
 #[test]
+fn test_compilation_scopes() -> Result<(), Error> {
+    let mut compiler = Compiler::new();
+
+    compiler.emit(opcode::Opcode::OpMul, vec![]);
+
+    {
+        compiler.enter_scope();
+
+        assert_eq!(compiler.scope_index(), 1);
+
+        compiler.emit(opcode::Opcode::OpSub, vec![]);
+
+        assert_eq!(compiler.scopes()[compiler.scope_index()].instructions.0.len(), 1);
+
+        let last = compiler.scopes()[compiler.scope_index()].last_instruction;
+        assert_eq!(last.opcode, opcode::Opcode::OpSub);
+
+        compiler.exit_scope();
+
+        assert_eq!(compiler.scope_index(), 0);
+
+        compiler.emit(opcode::Opcode::OpAdd, vec![]);
+
+        assert_eq!(compiler.scopes()[compiler.scope_index()].instructions.0.len(), 2);
+    }
+
+    let last = compiler.scopes()[compiler.scope_index()].last_instruction;
+
+    assert_eq!(last.opcode, opcode::Opcode::OpAdd);
+    assert_eq!(compiler.scopes()[compiler.scope_index()].previous_instruction.opcode, opcode::Opcode::OpMul);
+
+    let previous = compiler.scopes()[compiler.scope_index()].previous_instruction;
+    assert_eq!(previous.opcode, opcode::Opcode::OpMul);
+
+    Ok(())
+}
+
+#[test]
 fn test_conditionals() -> Result<(), Error> {
     let tests = vec![
         CompilerTestCase {
@@ -184,6 +222,58 @@ fn test_conditionals() -> Result<(), Error> {
                 opcode::make(opcode::Opcode::OpConst, &vec![1]),
                 opcode::make(opcode::Opcode::OpPop, &vec![]),
                 opcode::make(opcode::Opcode::OpConst, &vec![2]),
+                opcode::make(opcode::Opcode::OpPop, &vec![]),
+            ],
+        },
+    ];
+
+    run_compiler_tests(tests)?;
+
+    Ok(())
+}
+
+#[test]
+fn test_functions() -> Result<(), Error> {
+    let tests = vec![
+        CompilerTestCase {
+            input: "function () { return 5 + 10; }".to_string(),
+            expected_constants: vec![
+                Object::Integer(5),
+                Object::Integer(10),
+                Object::CompiledFunction(Rc::new(object::CompiledFunction::new(concat_instructions(&vec![
+                        opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                        opcode::make(opcode::Opcode::OpConst, &vec![1]),
+                        opcode::make(opcode::Opcode::OpAdd, &vec![]),
+                        opcode::make(opcode::Opcode::OpReturnValue, &vec![]),
+                    ]
+                )))),
+            ],
+            expected_instructions: vec![
+                opcode::make(opcode::Opcode::OpConst, &vec![2]),
+                opcode::make(opcode::Opcode::OpPop, &vec![]),
+            ],
+        },
+    ];
+
+    run_compiler_tests(tests)?;
+
+    Ok(())
+
+}
+
+#[test]
+fn test_functions_with_no_return_value() -> Result<(), Error> {
+    let tests = vec![
+        CompilerTestCase {
+            input: "function() { }".to_string(),
+            expected_constants: vec![
+                Object::CompiledFunction(Rc::new(object::CompiledFunction::new(concat_instructions(&vec![
+                        opcode::make(opcode::Opcode::OpReturn, &vec![]),
+                    ]
+                )))),
+            ],
+            expected_instructions: vec![
+                opcode::make(opcode::Opcode::OpConst, &vec![0]),
                 opcode::make(opcode::Opcode::OpPop, &vec![]),
             ],
         },
@@ -364,15 +454,15 @@ pub fn test_constants(expected: &Vec<Object>, actual: &Vec<Rc<Object>>) {
 }
 
 fn test_instructions(expected: &Vec<opcode::Instructions>, actual: &opcode::Instructions) {
-    let expected_ins = concat_instructions(expected);
+    let expected_instructions = concat_instructions(expected);
 
-    for (&exp, got) in expected_ins.0.iter().zip(actual.0.clone()) {
+    for (&exp, got) in expected_instructions.0.iter().zip(actual.0.clone()) {
         assert_eq!(
             exp,
             got,
             "instruction not equal\n actual  : \n{}\n expected: \n{}",
             actual.to_string(),
-            expected_ins.to_string()
+            expected_instructions.to_string()
         );
     }
 }

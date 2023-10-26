@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+use opcode::Instructions;
 use parser::ast::{BlockStatement, Identifier};
 
 use self::environment::Env;
@@ -12,6 +13,7 @@ pub enum Object {
     Boolean(bool),
     String(String),
     Function(Vec<Identifier>, BlockStatement, Env),
+    CompiledFunction(Rc<CompiledFunction>),
     Return(Rc<Object>),
     Array(Vec<Rc<Object>>),
     Null,
@@ -36,6 +38,7 @@ impl std::fmt::Display for Object {
 
                 write!(f, "fn({}) {{\n{}\n}}", parameters_string, body)
             }
+            Object::CompiledFunction(_function) => write!(f, "compiled function"),
             Object::Array(elements) => {
                 let mut elements_string = String::new();
 
@@ -52,5 +55,20 @@ impl std::fmt::Display for Object {
             Object::Return(value) => write!(f, "{}", value),
             Object::Null => write!(f, "null"),
         }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct CompiledFunction {
+    instructions: Instructions,
+}
+
+impl CompiledFunction {
+    pub fn new(instructions: Instructions) -> Self {
+        Self { instructions }
+    }
+
+    pub fn instructions(&self) -> &Instructions {
+        &self.instructions
     }
 }

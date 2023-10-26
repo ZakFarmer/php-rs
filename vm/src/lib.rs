@@ -335,6 +335,16 @@ impl Vm {
     }
 }
 
+impl std::fmt::Debug for Vm {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(
+            f,
+            "VM {{ constants: {:?}, instructions: {:?}, stack: {:?}, stack_pointer: {} }}",
+            self.constants, self.instructions, self.stack, self.stack_pointer
+        )
+    }
+}
+
 fn is_truthy(object: &Object) -> bool {
     match object {
         Object::Boolean(boolean) => *boolean,

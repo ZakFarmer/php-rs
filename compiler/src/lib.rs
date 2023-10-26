@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use anyhow::Error;
-use opcode::Opcode;
+use opcode::{Opcode, Instructions};
 use parser::ast::{
     BlockStatement, BooleanLiteral, Expression, IntegerLiteral, Literal, Node, Statement, StringLiteral,
 };
@@ -29,41 +29,84 @@ impl std::fmt::Debug for Bytecode {
     }
 }
 
-#[derive(Debug, Clone)]
-struct EmittedInstruction {
-    opcode: opcode::Opcode,
-    position: usize,
+#[derive(Clone, Debug)]
+pub struct CompilationScope {
+    pub instructions: opcode::Instructions,
+    pub last_instruction: EmittedInstruction,
+    pub previous_instruction: EmittedInstruction,
 }
 
 pub struct Compiler {
-    instructions: opcode::Instructions,
     pub constants: Vec<Rc<object::Object>>,
-
     pub symbol_table: SymbolTable,
 
-    last_instruction: Option<EmittedInstruction>,
-    previous_instruction: Option<EmittedInstruction>,
+    scopes: Vec<CompilationScope>,
+    scope_index: usize,
 }
 
 impl Compiler {
     pub fn new() -> Self {
-        Self {
+        let main_scope = CompilationScope {
             instructions: opcode::Instructions::default(),
+            last_instruction: EmittedInstruction {
+                opcode: opcode::Opcode::OpNull,
+                position: 0,
+            },
+            previous_instruction: EmittedInstruction {
+                opcode: opcode::Opcode::OpNull,
+                position: 0,
+            },
+        };
+
+        Self {
             constants: Vec::new(),
-            last_instruction: None,
-            previous_instruction: None,
             symbol_table: SymbolTable::new(),
+            scopes: vec![main_scope],
+            scope_index: 0,
         }
     }
 
     pub fn new_with_state(constants: Vec<Rc<object::Object>>, symbol_table: SymbolTable) -> Self {
         Self {
-            instructions: opcode::Instructions::default(),
             constants,
-            last_instruction: None,
-            previous_instruction: None,
             symbol_table,
+            scopes: vec![],
+            scope_index: 0,
         }
+    }
+
+    pub fn enter_scope(&mut self) {
+        let scope = CompilationScope {
+            instructions: opcode::Instructions::default(),
+            last_instruction: EmittedInstruction {
+                opcode: Opcode::OpNull,
+                position: 0,
+            },
+            previous_instruction: EmittedInstruction {
+                opcode: Opcode::OpNull,
+                position: 0,
+            },
+        };
+
+        self.scopes.push(scope);
+        self.scope_index += 1;
+    }
+
+    pub fn exit_scope(&mut self) -> opcode::Instructions {
+        let instructions = self.current_instructions().clone();
+
+        self.scopes.pop();
+        self.scope_index -= 1;
+
+        instructions
+    }
+
+    pub fn scopes(&self) -> &Vec<CompilationScope> {
+        &self.scopes
+    }
+
+    pub fn scope_index(&self) -> usize {
+        self.scope_index
     }
 
     fn add_constant(&mut self, obj: object::Object) -> usize {
@@ -73,53 +116,67 @@ impl Compiler {
     }
 
     fn change_operand(&mut self, position: usize, operand: usize) {
-        let op = Opcode::from(self.instructions.0[position]);
+        let op = Opcode::from(self.current_instructions().0[position]);
 
         let new_instruction = opcode::make(op, &vec![operand]);
 
         self.replace_instruction(position, new_instruction);
     }
 
-    fn add_instructions(&mut self, instructions: opcode::Instructions) -> usize {
-        let position = self.instructions.0.len();
+    pub fn add_instructions(&mut self, ins: &Instructions) -> usize {
+        let position = self.current_instructions().0.len();
 
-        self.instructions.0.extend(instructions.0);
+        let new_instruction = self.scopes[self.scope_index]
+            .instructions
+            .merge_instructions(ins);
 
+        self.scopes[self.scope_index].instructions = new_instruction;
         return position;
     }
 
-    fn current_instructions(&self) -> &opcode::Instructions {
-        return &self.instructions;
+    pub fn current_instructions(&self) -> &opcode::Instructions {
+        return &self.scopes[self.scope_index].instructions;
     }
 
     fn replace_instruction(&mut self, position: usize, new_instruction: opcode::Instructions) {
+        let instructions = &mut self.scopes[self.scope_index].instructions;
+
         for (i, instruction) in new_instruction.0.iter().enumerate() {
-            self.instructions.0[position + i] = *instruction;
+            instructions.0[position + i] = *instruction;
         }
     }
 
-    fn set_last_instruction(&mut self, op: opcode::Opcode, position: usize) {
-        let previous = self.last_instruction.clone();
-
-        self.previous_instruction = previous;
-
-        self.last_instruction = Some(EmittedInstruction {
+    fn set_last_instruction(&mut self, op: opcode::Opcode, position: usize) -> Result<(), Error> {
+        let previous = self.scopes[self.scope_index].last_instruction.clone();
+        let last = EmittedInstruction {
             opcode: op,
             position,
-        });
+        };
+        
+        self.scopes[self.scope_index].last_instruction = last;
+        self.scopes[self.scope_index].previous_instruction = previous;
+        
+        Ok(())
+    }
+
+    fn replace_last_pop_with_return(&mut self) {
+        let last_position = self.scopes[self.scope_index].last_instruction.position;
+        self.replace_instruction(last_position, opcode::make(Opcode::OpReturn, &vec![]));
+
+        self.scopes[self.scope_index].last_instruction.opcode = Opcode::OpReturn;
     }
 
     pub fn bytecode(&self) -> Bytecode {
         Bytecode {
-            instructions: self.instructions.clone(),
+            instructions: self.current_instructions().clone(),
             constants: self.constants.clone(),
         }
     }
 
-    fn emit(&mut self, op: opcode::Opcode, operands: Vec<usize>) -> usize {
+    pub fn emit(&mut self, op: opcode::Opcode, operands: Vec<usize>) -> usize {
         let instructions = opcode::make(op, &operands);
 
-        let index = self.add_instructions(instructions);
+        let index = self.add_instructions(&instructions);
 
         self.set_last_instruction(op, index);
 
@@ -165,6 +222,8 @@ impl Compiler {
             }
             Statement::Return(r) => {
                 self.compile_expression(&r.return_value)?;
+
+                self.emit(opcode::Opcode::OpReturnValue, vec![]);
 
                 Ok(())
             }
@@ -216,6 +275,45 @@ impl Compiler {
                         )));
                     }
                 }
+
+                Ok(())
+            }
+            Expression::Function(function_literal) => {
+                self.enter_scope();
+
+                self.compile_block_statement(&function_literal.body)?;
+
+                if self.last_instruction_is(Opcode::OpPop) {
+                    self.replace_last_pop_with_return();
+                }
+
+                if ! self.last_instruction_is(Opcode::OpReturnValue) {
+                    self.emit(Opcode::OpReturn, vec![]);
+                }
+
+                // let free_symbols = self.symbol_table.free_symbols();
+
+                // let num_locals = self.symbol_table.num_definitions;
+                
+                let instructions = self.exit_scope();
+
+                // for symbol in free_symbols.iter().rev() {
+                //     self.emit(Opcode::OpGetFree, vec![symbol.index]);
+                // }
+
+                let compiled_function = Rc::new(
+                    object::CompiledFunction::new(
+                        instructions,
+                    ),
+                );
+
+                let operands = vec![self.add_constant(
+                    object::Object::CompiledFunction(compiled_function)
+                ), 0];
+                
+                self.emit(Opcode::OpConst, operands);
+
+                // self.emit(Opcode::OpClosure, vec![constant, free_symbols.len()]);
 
                 Ok(())
             }
@@ -340,14 +438,27 @@ impl Compiler {
     }
 
     fn last_instruction_is(&self, op: Opcode) -> bool {
-        match &self.last_instruction {
-            Some(instruction) => instruction.opcode == op,
-            None => false,
+        if self.current_instructions().0.is_empty() {
+            return false;
         }
+
+        &self.scopes[self.scope_index].last_instruction.opcode == &op
     }
 
     fn remove_last_pop(&mut self) {
-        self.instructions.0.pop();
-        self.last_instruction = self.previous_instruction.clone();
+        let last = self.scopes[self.scope_index].last_instruction.clone();
+        let previous = self.scopes[self.scope_index].previous_instruction.clone();
+
+        let old_instructions = self.current_instructions().0.clone();
+        let new_instructions = old_instructions[..last.position].to_vec();
+
+        self.scopes[self.scope_index].instructions.0 = new_instructions;
+        self.scopes[self.scope_index].last_instruction = previous;
     }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct EmittedInstruction {
+    pub opcode: opcode::Opcode,
+    pub position: usize,
 }

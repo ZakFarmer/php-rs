@@ -20,7 +20,11 @@ fn run_vm_tests(tests: Vec<VmTestCase>) -> Result<(), Error> {
 
         let mut vm = Vm::new(bytecode);
 
+        println!("Running: {}", test.input);
+
         vm.run()?;
+
+        // dbg!(&vm);
 
         let stack_elem = vm.last_popped_stack_elem();
 
