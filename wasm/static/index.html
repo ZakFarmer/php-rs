@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>php-rs 0.1.0</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <style type="text/css">
+      #output::-webkit-scrollbar {
+        display: none;
+      }
+
+      #output {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
+  </head>
+  <body class="bg-black text-green-400 font-mono h-screen flex flex-col">
+    <div
+      id="output"
+      class="flex-grow p-4 overflow-y-scroll whitespace-pre-wrap"
+    ></div>
+    <div class="flex-shrink-0">
+      <textarea
+        id="input"
+        rows="3"
+        class="p-4 w-full bg-gray-800 resize-none placeholder-gray-600 focus:outline-none"
+        placeholder="Enter your PHP code here..."
+      ></textarea>
+    </div>
+    <script src="index.js"></script>
+  </body>
+</html>
