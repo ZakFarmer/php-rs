@@ -250,6 +250,14 @@ impl Compiler {
 
                 Ok(())
             }
+            Expression::Index(index_expression) => {
+                self.compile_expression(&index_expression.left)?;
+                self.compile_expression(&index_expression.index)?;
+
+                self.emit(opcode::Opcode::OpIndex, vec![]);
+
+                Ok(())
+            }
             Expression::Infix(infix_expression) => {
                 self.compile_operands(
                     &infix_expression.left,

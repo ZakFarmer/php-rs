@@ -273,6 +273,28 @@ fn test_global_dollar_statements() -> Result<(), Error> {
 }
 
 #[test]
+fn test_index_expressions() -> Result<(), Error> {
+    let tests = vec![
+        VmTestCase {
+            input: "[1, 2, 3][1]".to_string(),
+            expected: "2".to_string(),
+        },
+        VmTestCase {
+            input: "[1, 2, 3][0 + 2]".to_string(),
+            expected: "3".to_string(),
+        },
+        VmTestCase {
+            input: "[[1, 1, 1]][0][0]".to_string(),
+            expected: "1".to_string(),
+        },
+    ];
+
+    run_vm_tests(tests)?;
+
+    Ok(())
+}
+
+#[test]
 fn test_string_expressions() -> Result<(), Error> {
     let tests = vec![
         VmTestCase {

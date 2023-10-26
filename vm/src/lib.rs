@@ -279,6 +279,34 @@ impl Vm {
 
                     self.push(Rc::new(Object::Array(elements)));
                 }
+                Opcode::OpIndex => {
+                    let index = self.pop();
+                    let left = self.pop();
+
+                    let result = match (&*left, &*index) {
+                        (Object::Array(elements), Object::Integer(integer)) => {
+                            let idx = *integer as usize;
+
+                            if idx >= elements.len() {
+                                return Err(Error::msg(format!(
+                                    "index out of bounds: index={}, length={}",
+                                    idx,
+                                    elements.len()
+                                )));
+                            }
+
+                            Rc::clone(&elements[idx])
+                        }
+                        _ => {
+                            return Err(Error::msg(format!(
+                                "unsupported types for index: {}[{}]",
+                                left, index
+                            )));
+                        }
+                    };
+
+                    self.push(result);
+                }
                 _ => {
                     return Err(Error::msg(format!("unknown opcode: {}", op)));
                 }

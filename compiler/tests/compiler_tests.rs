@@ -195,6 +195,58 @@ fn test_conditionals() -> Result<(), Error> {
 }
 
 #[test]
+fn test_index_expressions() -> Result<(), Error> {
+    let tests = vec![
+        CompilerTestCase {
+            input: "[1, 2, 3][1 + 1]".to_string(),
+            expected_constants: vec![
+                Object::Integer(1),
+                Object::Integer(2),
+                Object::Integer(3),
+                Object::Integer(1),
+                Object::Integer(1),
+            ],
+            expected_instructions: vec![
+                opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                opcode::make(opcode::Opcode::OpConst, &vec![1]),
+                opcode::make(opcode::Opcode::OpConst, &vec![2]),
+                opcode::make(opcode::Opcode::OpArray, &vec![3]),
+                opcode::make(opcode::Opcode::OpConst, &vec![3]),
+                opcode::make(opcode::Opcode::OpConst, &vec![4]),
+                opcode::make(opcode::Opcode::OpAdd, &vec![4]),
+                opcode::make(opcode::Opcode::OpIndex, &vec![]),
+                opcode::make(opcode::Opcode::OpPop, &vec![]),
+            ],
+        },
+        CompilerTestCase {
+            input: "[1, 2, 3][2 - 1]".to_string(),
+            expected_constants: vec![
+                Object::Integer(1),
+                Object::Integer(2),
+                Object::Integer(3),
+                Object::Integer(2),
+                Object::Integer(1),
+            ],
+            expected_instructions: vec![
+                opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                opcode::make(opcode::Opcode::OpConst, &vec![1]),
+                opcode::make(opcode::Opcode::OpConst, &vec![2]),
+                opcode::make(opcode::Opcode::OpArray, &vec![3]),
+                opcode::make(opcode::Opcode::OpConst, &vec![3]),
+                opcode::make(opcode::Opcode::OpConst, &vec![4]),
+                opcode::make(opcode::Opcode::OpSub, &vec![4]),
+                opcode::make(opcode::Opcode::OpIndex, &vec![]),
+                opcode::make(opcode::Opcode::OpPop, &vec![]),
+            ],
+        },
+    ];
+
+    run_compiler_tests(tests)?;
+
+    Ok(())
+}
+
+#[test]
 fn test_integer_arithmetic() -> Result<(), Error> {
     let tests = vec![
         CompilerTestCase {
@@ -292,6 +344,9 @@ fn run_compiler_tests(tests: Vec<CompilerTestCase>) -> Result<(), Error> {
         let mut compiler = Compiler::new();
 
         let bytecode = compiler.compile(&Node::Program(program))?;
+
+        println!("Testing input: {}", test.input.to_string());
+        println!("Constants: {:?}", bytecode.constants);
 
         test_constants(&test.expected_constants, &bytecode.constants);
         test_instructions(&test.expected_instructions, &bytecode.instructions);
