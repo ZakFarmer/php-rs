@@ -282,6 +282,15 @@ impl Compiler {
                 Ok(())
             }
             Expression::Literal(literal_expression) => match literal_expression {
+                Literal::Array(array) => {
+                    for element in array.elements.iter() {
+                        self.compile_expression(element)?;
+                    }
+
+                    self.emit(opcode::Opcode::OpArray, vec![array.elements.len()]);
+
+                    Ok(())
+                }
                 Literal::Boolean(boolean) => match boolean {
                     BooleanLiteral { value: true, .. } => {
                         self.emit(opcode::Opcode::OpTrue, vec![]);

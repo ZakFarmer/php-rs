@@ -14,6 +14,63 @@ struct CompilerTestCase {
 }
 
 #[test]
+fn test_array_expressions() -> Result<(), Error> {
+    let tests = vec![
+        CompilerTestCase {
+            input: "[]".to_string(),
+            expected_constants: vec![],
+            expected_instructions: vec![
+                opcode::make(opcode::Opcode::OpArray, &vec![0]),
+                opcode::make(opcode::Opcode::OpPop, &vec![]),
+            ],
+        },
+        CompilerTestCase {
+            input: "[1, 2, 3]".to_string(),
+            expected_constants: vec![
+                Object::Integer(1),
+                Object::Integer(2),
+                Object::Integer(3),
+            ],
+            expected_instructions: vec![
+                opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                opcode::make(opcode::Opcode::OpConst, &vec![1]),
+                opcode::make(opcode::Opcode::OpConst, &vec![2]),
+                opcode::make(opcode::Opcode::OpArray, &vec![3]),
+                opcode::make(opcode::Opcode::OpPop, &vec![]),
+            ],
+        },
+        CompilerTestCase {
+            input: "[1 + 2, 3 - 4, 5 * 6]".to_string(),
+            expected_constants: vec![
+                Object::Integer(1),
+                Object::Integer(2),
+                Object::Integer(3),
+                Object::Integer(4),
+                Object::Integer(5),
+                Object::Integer(6),
+            ],
+            expected_instructions: vec![
+                opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                opcode::make(opcode::Opcode::OpConst, &vec![1]),
+                opcode::make(opcode::Opcode::OpAdd, &vec![1]),
+                opcode::make(opcode::Opcode::OpConst, &vec![2]),
+                opcode::make(opcode::Opcode::OpConst, &vec![3]),
+                opcode::make(opcode::Opcode::OpSub, &vec![1]),
+                opcode::make(opcode::Opcode::OpConst, &vec![4]),
+                opcode::make(opcode::Opcode::OpConst, &vec![5]),
+                opcode::make(opcode::Opcode::OpMul, &vec![1]),
+                opcode::make(opcode::Opcode::OpArray, &vec![3]),
+                opcode::make(opcode::Opcode::OpPop, &vec![]),
+            ],
+        },
+    ];
+
+    run_compiler_tests(tests)?;
+
+    Ok(())
+}
+
+#[test]
 fn test_boolean_expressions() -> Result<(), Error> {
     let tests = vec![
         CompilerTestCase {

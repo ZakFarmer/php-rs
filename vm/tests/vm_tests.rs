@@ -31,6 +31,28 @@ fn run_vm_tests(tests: Vec<VmTestCase>) -> Result<(), Error> {
 }
 
 #[test]
+fn test_array_expressions() -> Result<(), Error> {
+    let tests = vec![
+        VmTestCase {
+            input: "[]".to_string(),
+            expected: "[]".to_string(),
+        },
+        VmTestCase {
+            input: "[1, 2, 3]".to_string(),
+            expected: "[1, 2, 3]".to_string(),
+        },
+        VmTestCase {
+            input: "[1 + 2, 3 * 4, 5 + 6]".to_string(),
+            expected: "[3, 12, 11]".to_string(),
+        },
+    ];
+
+    run_vm_tests(tests)?;
+
+    Ok(())
+}
+
+#[test]
 fn test_boolean_expressions() -> Result<(), Error> {
     let tests = vec![
         VmTestCase {

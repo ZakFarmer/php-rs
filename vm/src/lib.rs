@@ -263,6 +263,22 @@ impl Vm {
 
                     self.push(Rc::new(result));
                 }
+                Opcode::OpArray => {
+                    let num_elements =
+                        BigEndian::read_u16(&self.instructions.0[ip..ip + 2]) as usize;
+
+                    ip += 2;
+
+                    let mut elements = Vec::with_capacity(num_elements);
+
+                    for _ in 0..num_elements {
+                        elements.push(self.pop());
+                    }
+
+                    elements.reverse();
+
+                    self.push(Rc::new(Object::Array(elements)));
+                }
                 _ => {
                     return Err(Error::msg(format!("unknown opcode: {}", op)));
                 }
