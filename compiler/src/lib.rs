@@ -67,11 +67,12 @@ impl Compiler {
     }
 
     pub fn new_with_state(constants: Vec<Rc<object::Object>>, symbol_table: SymbolTable) -> Self {
+        let compiler = Self::new();
+
         Self {
             constants,
             symbol_table,
-            scopes: vec![],
-            scope_index: 0,
+            ..compiler
         }
     }
 
@@ -290,18 +291,10 @@ impl Compiler {
                 if ! self.last_instruction_is(Opcode::OpReturnValue) {
                     self.emit(Opcode::OpReturn, vec![]);
                 }
-
-                // let free_symbols = self.symbol_table.free_symbols();
-
-                // let num_locals = self.symbol_table.num_definitions;
                 
                 let instructions = self.exit_scope();
 
-                // for symbol in free_symbols.iter().rev() {
-                //     self.emit(Opcode::OpGetFree, vec![symbol.index]);
-                // }
-
-                let compiled_function = Rc::new(
+                let compiled_function = Rc::from(
                     object::CompiledFunction::new(
                         instructions,
                     ),
@@ -309,11 +302,16 @@ impl Compiler {
 
                 let operands = vec![self.add_constant(
                     object::Object::CompiledFunction(compiled_function)
-                ), 0];
+                )];
                 
                 self.emit(Opcode::OpConst, operands);
 
-                // self.emit(Opcode::OpClosure, vec![constant, free_symbols.len()]);
+                Ok(())
+            }
+            Expression::Call(call_expression) => {
+                self.compile_expression(&call_expression.function)?;
+
+                self.emit(Opcode::OpCall, vec![call_expression.arguments.len()]);
 
                 Ok(())
             }

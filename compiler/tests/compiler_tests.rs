@@ -285,6 +285,34 @@ fn test_functions_with_no_return_value() -> Result<(), Error> {
 }
 
 #[test]
+fn test_function_calls() -> Result<(), Error> {
+    let tests = vec![
+        CompilerTestCase {
+            input: "$noArg = function () { return 24; }; $noArg();".to_string(),
+            expected_constants: vec![
+                Object::Integer(24),
+                Object::CompiledFunction(Rc::new(object::CompiledFunction::new(concat_instructions(&vec![
+                        opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                        opcode::make(opcode::Opcode::OpReturnValue, &vec![]),
+                    ]
+                )))),
+            ],
+            expected_instructions: vec![
+                opcode::make(opcode::Opcode::OpConst, &vec![1]),
+                opcode::make(opcode::Opcode::OpSetGlobal, &vec![0]),
+                opcode::make(opcode::Opcode::OpGetGlobal, &vec![0]),
+                opcode::make(opcode::Opcode::OpCall, &vec![0]),
+                opcode::make(opcode::Opcode::OpPop, &vec![]),
+            ],
+        },
+    ];
+
+    run_compiler_tests(tests)?;
+
+    Ok(())
+}
+
+#[test]
 fn test_index_expressions() -> Result<(), Error> {
     let tests = vec![
         CompilerTestCase {
