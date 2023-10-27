@@ -20,12 +20,38 @@ fn run_vm_tests(tests: Vec<VmTestCase>) -> Result<(), Error> {
 
         let mut vm = Vm::new(bytecode);
 
+        println!("Running: {}", test.input);
+
         vm.run()?;
+
+        // dbg!(&vm);
 
         let stack_elem = vm.last_popped_stack_elem();
 
         assert_eq!(stack_elem.to_string(), test.expected);
     }
+
+    Ok(())
+}
+
+#[test]
+fn test_array_expressions() -> Result<(), Error> {
+    let tests = vec![
+        VmTestCase {
+            input: "[]".to_string(),
+            expected: "[]".to_string(),
+        },
+        VmTestCase {
+            input: "[1, 2, 3]".to_string(),
+            expected: "[1, 2, 3]".to_string(),
+        },
+        VmTestCase {
+            input: "[1 + 2, 3 * 4, 5 + 6]".to_string(),
+            expected: "[3, 12, 11]".to_string(),
+        },
+    ];
+
+    run_vm_tests(tests)?;
 
     Ok(())
 }
@@ -242,6 +268,28 @@ fn test_global_dollar_statements() -> Result<(), Error> {
         VmTestCase {
             input: "$one = 1; $two = $one + $one; $one + $two".to_string(),
             expected: "3".to_string(),
+        },
+    ];
+
+    run_vm_tests(tests)?;
+
+    Ok(())
+}
+
+#[test]
+fn test_index_expressions() -> Result<(), Error> {
+    let tests = vec![
+        VmTestCase {
+            input: "[1, 2, 3][1]".to_string(),
+            expected: "2".to_string(),
+        },
+        VmTestCase {
+            input: "[1, 2, 3][0 + 2]".to_string(),
+            expected: "3".to_string(),
+        },
+        VmTestCase {
+            input: "[[1, 1, 1]][0][0]".to_string(),
+            expected: "1".to_string(),
         },
     ];
 

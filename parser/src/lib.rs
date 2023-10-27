@@ -206,11 +206,6 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_array_literal(&mut self) -> Result<Expression> {
-        info!(
-            "parse_array_literal: Current token: {:?}",
-            self.current_token
-        );
-
         let current_token = self.current_token.clone().unwrap();
 
         let elements = self.parse_expression_list(TokenType::RBracket)?;
@@ -292,11 +287,6 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_variable_reference_expression(&mut self) -> Result<Expression> {
-        info!(
-            "parse_variable_reference_expression: Current token: {:?}",
-            self.current_token
-        );
-
         // Expect the next token to be an identifier
         if let Some(token) = &self.current_token {
             if token.token_type == TokenType::Ident {
@@ -320,11 +310,6 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_assignment_statement(&mut self) -> Result<Statement> {
-        info!(
-            "parse_assignment_statement: Current token: {:?}",
-            self.current_token
-        );
-
         // Ensure the variable name is an identifier.
         let name_token = if let Some(token) = &self.current_token {
             if token.token_type == TokenType::Ident {
@@ -388,8 +373,6 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expression(&mut self, precedence: Precedence) -> Result<Expression> {
-        info!("parse_expression: Current token: {:?}", self.current_token);
-
         // Get prefix parse function (if it exists)
         let prefix_fn = self
             .prefix_parse_fns
@@ -406,7 +389,7 @@ impl<'a> Parser<'a> {
         // Call the prefix parse function
         let mut left = prefix_fn.unwrap()(self);
 
-        while !self.peek_token_is(&TokenType::Semicolon) && precedence < self.peek_precedence() {
+        while ! self.peek_token_is(&TokenType::Semicolon) && precedence < self.peek_precedence() {
             let infix_fn = self
                 .infix_parse_fns
                 .get(&self.peek_token.as_ref().unwrap().token_type)
@@ -425,11 +408,6 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expression_list(&mut self, end: TokenType) -> Result<Vec<Expression>> {
-        info!(
-            "parse_expression_list: Current token: {:?}",
-            self.current_token
-        );
-
         let mut list = vec![];
 
         if self.peek_token_is(&end) {
@@ -458,11 +436,8 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expression_statement(&mut self) -> Result<Statement> {
-        info!(
-            "parse_expression_statement: Current token: {:?}",
-            self.current_token
-        );
         let expr = self.parse_expression(Precedence::Lowest)?;
+
         if self.peek_token_is(&TokenType::Semicolon) {
             self.next_token();
         }
@@ -471,11 +446,6 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_block_statement(&mut self) -> Result<BlockStatement> {
-        info!(
-            "parse_block_statement: Current token: {:?}",
-            self.current_token
-        );
-
         let current_token = self.current_token.clone().unwrap();
 
         let mut statements = vec![];
@@ -499,11 +469,6 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_function_literal(&mut self) -> Result<Expression> {
-        info!(
-            "parse_function_literal: Current token: {:?}",
-            self.current_token
-        );
-
         let current_token = self.current_token.clone().unwrap();
 
         if !self.expect_peek(&TokenType::LParen) {
@@ -530,10 +495,6 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_function_parameters(&mut self) -> Result<Vec<Identifier>> {
-        info!(
-            "parse_function_parameters: Current token: {:?}",
-            self.current_token
-        );
         let mut identifiers = vec![];
 
         if self.peek_token_is(&TokenType::RParen) {
@@ -577,11 +538,6 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_grouped_expression(&mut self) -> Result<Expression> {
-        info!(
-            "parse_grouped_expression: Current token: {:?}",
-            self.current_token
-        );
-
         self.next_token();
 
         let expression = self.parse_expression(Precedence::Lowest);
@@ -594,7 +550,6 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_identifier(&mut self) -> Result<Expression> {
-        info!("parse_identifier: Current token: {:?}", self.current_token);
         let current_token = self.current_token.clone().unwrap();
 
         let identifier = Identifier {
@@ -606,11 +561,6 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_integer_literal(&mut self) -> Result<Expression> {
-        info!(
-            "parse_integer_literal: Current token: {:?}",
-            self.current_token
-        );
-
         let current_token = self.current_token.clone().unwrap();
 
         let value = self
@@ -628,11 +578,6 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_call_arguments(&mut self) -> Vec<Expression> {
-        info!(
-            "parse_call_arguments: Current token: {:?}",
-            self.current_token
-        );
-
         let mut arguments = vec![];
 
         if self.peek_token_is(&TokenType::RParen) {
@@ -658,10 +603,6 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_call_expression(&mut self, function: Expression) -> Result<Expression> {
-        info!(
-            "parse_call_expression: Current token: {:?}",
-            self.current_token
-        );
         let current_token = self.current_token.clone().unwrap();
 
         let arguments = self.parse_call_arguments();
@@ -674,11 +615,6 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_if_expression(&mut self) -> Result<Expression> {
-        info!(
-            "parse_if_expression: Current token: {:?}",
-            self.current_token
-        );
-
         self.expect_peek(&TokenType::LParen);
         self.next_token();
 
@@ -705,11 +641,6 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_index_expression(&mut self, left: Expression) -> Result<Expression> {
-        info!(
-            "parse_index_expression: Current token: {:?}",
-            self.current_token
-        );
-
         let current_token = self.current_token.clone().unwrap();
 
         self.next_token();
@@ -728,11 +659,6 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_infix_expression(&mut self, left: Expression) -> Result<Expression> {
-        info!(
-            "parse_infix_expression: Current token: {:?}",
-            self.current_token
-        );
-
         let current_token = self.current_token.clone().unwrap();
 
         let operator = self.current_token.as_ref().unwrap().to_string();
@@ -757,11 +683,6 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_prefix_expression(&mut self) -> Result<Expression> {
-        info!(
-            "parse_prefix_expression: Current token: {:?}",
-            self.current_token
-        );
-
         let current_token = self.current_token.clone().unwrap();
 
         let operator = self.current_token.as_ref().unwrap().to_string();

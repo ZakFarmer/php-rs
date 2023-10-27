@@ -263,6 +263,50 @@ impl Vm {
 
                     self.push(Rc::new(result));
                 }
+                Opcode::OpArray => {
+                    let num_elements =
+                        BigEndian::read_u16(&self.instructions.0[ip..ip + 2]) as usize;
+
+                    ip += 2;
+
+                    let mut elements = Vec::with_capacity(num_elements);
+
+                    for _ in 0..num_elements {
+                        elements.push(self.pop());
+                    }
+
+                    elements.reverse();
+
+                    self.push(Rc::new(Object::Array(elements)));
+                }
+                Opcode::OpIndex => {
+                    let index = self.pop();
+                    let left = self.pop();
+
+                    let result = match (&*left, &*index) {
+                        (Object::Array(elements), Object::Integer(integer)) => {
+                            let idx = *integer as usize;
+
+                            if idx >= elements.len() {
+                                return Err(Error::msg(format!(
+                                    "index out of bounds: index={}, length={}",
+                                    idx,
+                                    elements.len()
+                                )));
+                            }
+
+                            Rc::clone(&elements[idx])
+                        }
+                        _ => {
+                            return Err(Error::msg(format!(
+                                "unsupported types for index: {}[{}]",
+                                left, index
+                            )));
+                        }
+                    };
+
+                    self.push(result);
+                }
                 _ => {
                     return Err(Error::msg(format!("unknown opcode: {}", op)));
                 }
@@ -288,6 +332,16 @@ impl Vm {
 
     pub fn stack_top(&self) -> Rc<Object> {
         Rc::clone(&self.stack[self.stack_pointer - 1])
+    }
+}
+
+impl std::fmt::Debug for Vm {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(
+            f,
+            "VM {{ constants: {:?}, instructions: {:?}, stack: {:?}, stack_pointer: {} }}",
+            self.constants, self.instructions, self.stack, self.stack_pointer
+        )
     }
 }
 

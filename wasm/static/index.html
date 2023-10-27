@@ -9,6 +9,10 @@
       rel="stylesheet"
     />
     <style type="text/css">
+      body {
+        overflow: hidden;
+      }
+
       #output::-webkit-scrollbar {
         display: none;
       }
@@ -16,6 +20,9 @@
       #output {
         -ms-overflow-style: none;
         scrollbar-width: none;
+
+        overflow-y: auto;
+        max-height: calc(100vh - 4rem);
       }
     </style>
   </head>
