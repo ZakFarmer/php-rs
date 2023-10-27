@@ -60,7 +60,7 @@ impl std::fmt::Display for Object {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct CompiledFunction {
-    instructions: Instructions,
+    pub instructions: Instructions,
 }
 
 impl CompiledFunction {

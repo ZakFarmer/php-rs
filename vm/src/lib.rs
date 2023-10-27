@@ -3,33 +3,63 @@ use std::{borrow::Borrow, rc::Rc};
 use anyhow::Error;
 use byteorder::{BigEndian, ByteOrder};
 use compiler::Bytecode;
-use object::Object;
-use opcode::Opcode;
+use object::{Object, CompiledFunction};
+use opcode::{Opcode, Instructions};
+
+mod frame;
 
 pub const GLOBALS_SIZE: usize = 65536;
 pub const STACK_SIZE: usize = 2048;
 
+pub const MAX_FRAMES: usize = 1024;
+
 pub struct Vm {
     constants: Vec<Rc<Object>>,
-    instructions: opcode::Instructions,
 
     pub globals: Vec<Rc<Object>>,
+
+    frames: Vec<frame::Frame>,
+    frame_index: usize,
 
     stack: Vec<Rc<Object>>,
     stack_pointer: usize,
 }
 
 impl Vm {
+    pub fn current_frame(&mut self) -> &mut frame::Frame {
+        &mut self.frames[self.frame_index - 1]
+    }
+
+    pub fn push_frame(&mut self, frame: frame::Frame) {
+        self.frames.push(frame);
+        self.frame_index += 1;
+    }
+
+    pub fn pop_frame(&mut self) -> frame::Frame {
+        self.frame_index -= 1;
+        self.frames.pop().unwrap()
+    }
+
     pub fn globals(&self) -> &Vec<Rc<Object>> {
         &self.globals
     }
 
     pub fn new(bytecode: Bytecode) -> Self {
+        let empty_frame = frame::Frame::new(CompiledFunction::new(Instructions(vec![])));
+
+        let main_function = CompiledFunction::new(bytecode.instructions.clone());
+        let main_frame = frame::Frame::new(main_function);
+        
+        let mut frames = vec![empty_frame; MAX_FRAMES];
+        frames[0] = main_frame;
+
         Self {
             constants: bytecode.constants,
-            instructions: bytecode.instructions,
 
             globals: vec![Rc::new(Object::Null); GLOBALS_SIZE],
+
+            frames,
+            frame_index: 1,
 
             stack: vec![Rc::new(Object::Null); STACK_SIZE],
             stack_pointer: 0,
@@ -37,56 +67,70 @@ impl Vm {
     }
 
     pub fn new_with_globals_store(bytecode: Bytecode, globals: Vec<Rc<Object>>) -> Self {
-        Self {
-            constants: bytecode.constants,
-            instructions: bytecode.instructions,
+        let mut compiler = Self::new(bytecode);
 
-            globals: globals.clone(),
+        compiler.globals = globals;
 
-            stack: vec![Rc::new(Object::Null); STACK_SIZE],
-            stack_pointer: 0,
-        }
+        compiler
     }
 
     pub fn run(&mut self) -> Result<(), Error> {
-        let mut ip = 0;
+        let mut instruction_pointer: usize;
+        let mut instructions: Vec<u8>;
 
-        while ip < self.instructions.0.len() {
-            let op = Opcode::from(self.instructions.0[ip]);
-            ip += 1;
+        dbg!(self.current_frame());
 
-            match op {
+        while self.current_frame().instruction_pointer < self.current_frame().instructions().0.len() as i32 - 1 {
+            self.current_frame().instruction_pointer += 1;
+           
+            instruction_pointer = self.current_frame().instruction_pointer as usize;
+            instructions = self.current_frame().instructions().0.clone();
+
+            let op = *instructions.get(instruction_pointer).ok_or_else(|| {
+                Error::msg(format!(
+                    "no instruction at index {} in function {:?}",
+                    instruction_pointer, self.current_frame().function
+                ))
+            })?;
+
+            dbg!(op);
+
+            let opcode = Opcode::from(op);
+
+            dbg!(opcode);
+
+            match opcode {
                 Opcode::OpJump => {
                     let jump_position =
-                        BigEndian::read_u16(&self.instructions.0[ip..ip + 2]) as usize;
+                        BigEndian::read_u16(&instructions[instruction_pointer + 1..instruction_pointer + 3]) as usize;
 
-                    ip = jump_position;
+                    self.current_frame().instruction_pointer = jump_position as i32 - 1;
                 }
                 Opcode::OpJumpNotTruthy => {
                     let jump_position =
-                        BigEndian::read_u16(&self.instructions.0[ip..ip + 2]) as usize;
+                        BigEndian::read_u16(&instructions[instruction_pointer + 1..instruction_pointer + 3]) as usize;
 
-                    ip += 2;
+                    self.current_frame().instruction_pointer += 2;
 
                     let condition = self.pop();
 
                     if !is_truthy(&condition) {
-                        ip = jump_position;
+                        self.current_frame().instruction_pointer = jump_position as i32 - 1;
                     }
                 }
                 Opcode::OpGetGlobal => {
                     let global_index =
-                        BigEndian::read_u16(&self.instructions.0[ip..ip + 2]) as usize;
+                        BigEndian::read_u16(&instructions[instruction_pointer + 1..instruction_pointer + 3]) as usize;
 
-                    ip += 2;
+                    self.current_frame().instruction_pointer += 2;
 
                     self.push(Rc::clone(&self.globals[global_index]));
                 }
                 Opcode::OpSetGlobal => {
                     let global_index =
-                        BigEndian::read_u16(&self.instructions.0[ip..ip + 2]) as usize;
+                        BigEndian::read_u16(&instructions[instruction_pointer + 1..instruction_pointer + 3]) as usize;
 
-                    ip += 2;
+                    self.current_frame().instruction_pointer += 2;
 
                     self.globals[global_index] = self.pop();
                 }
@@ -95,9 +139,9 @@ impl Vm {
                 }
                 Opcode::OpConst => {
                     let const_index =
-                        BigEndian::read_u16(&self.instructions.0[ip..ip + 2]) as usize;
+                        BigEndian::read_u16(&instructions[instruction_pointer + 1..instruction_pointer + 3]) as usize;
 
-                    ip += 2;
+                    self.current_frame().instruction_pointer += 2;
 
                     self.push(Rc::clone(&self.constants[const_index]));
                 }
@@ -265,9 +309,9 @@ impl Vm {
                 }
                 Opcode::OpArray => {
                     let num_elements =
-                        BigEndian::read_u16(&self.instructions.0[ip..ip + 2]) as usize;
+                        BigEndian::read_u16(&&instructions[instruction_pointer + 1..instruction_pointer + 3]) as usize;
 
-                    ip += 2;
+                    self.current_frame().instruction_pointer += 2;
 
                     let mut elements = Vec::with_capacity(num_elements);
 
@@ -332,16 +376,6 @@ impl Vm {
 
     pub fn stack_top(&self) -> Rc<Object> {
         Rc::clone(&self.stack[self.stack_pointer - 1])
-    }
-}
-
-impl std::fmt::Debug for Vm {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(
-            f,
-            "VM {{ constants: {:?}, instructions: {:?}, stack: {:?}, stack_pointer: {} }}",
-            self.constants, self.instructions, self.stack, self.stack_pointer
-        )
     }
 }
 
