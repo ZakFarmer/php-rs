@@ -35,3 +35,7 @@ jobs:
       - name: Upload to S3
         run: |
           aws s3 sync wasm/dist s3://zakfarmer-php-rs
+
+      - name: Invalidate CloudFront Cache
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
