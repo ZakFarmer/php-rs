@@ -277,8 +277,6 @@ impl Compiler {
             Expression::Identifier(identifier) => {
                 let symbol = self.symbol_table.resolve(&identifier.value);
 
-                dbg!(&symbol);
-
                 match symbol {
                     Some(symbol) => {
                         self.emit(

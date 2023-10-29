@@ -98,9 +98,7 @@ impl Vm {
             })?;
 
             let opcode = Opcode::from(op);
-
-            dbg!(opcode);
-
+            
             match opcode {
                 Opcode::OpJump => {
                     let jump_position = BigEndian::read_u16(

@@ -8,7 +8,9 @@ With this project I'm attempting to create a lightweight PHP interpreter built u
 It's currently in its early stages and is meant for experimental and educational purposes.
 
 ## Try it out
-I've deployed the REPL to the web using WebAssembly (see the ```wasm``` directory)
+
+I've deployed the REPL to the web using WebAssembly (see the `wasm` directory).
+A GitHub Action is used to build and deploy it to S3 on every push to the `main` branch.
 
 You can find it [here](https://php-rs.zakfarmer.com).
 
@@ -16,6 +18,9 @@ You can find it [here](https://php-rs.zakfarmer.com).
 
 - Basic arithmetic operations
 - Conditional operators / boolean expressions
+- First-class functions
+- Variable assignment & scopes
+- WASM binary
 
 Expect this list to grow 😁
 
@@ -35,11 +40,13 @@ cargo run
 ```
 
 To run the testsuite:
+
 ```bash
 cargo test
 ```
 
 ## Credits
+
 The design of the project was heavily influenced by Thorsten Ball's "Writing an Interpreter in Go" and "Writing a Compiler in Go", of course adapted to Rust.
 100% recommend reading both as they're great books if you're interested in language fundamentals.
 

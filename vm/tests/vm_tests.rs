@@ -415,9 +415,6 @@ fn test_variable_scopes() -> Result<(), Error> {
 
 // TODO: remove duplication and extract helper function for use in multiple tests
 fn assert_constants(expected: &Vec<Object>, actual: &Vec<Rc<Object>>) {
-    dbg!(expected);
-    dbg!(actual);
-
     assert_eq!(expected.len(), actual.len());
     for (exp, b_got) in expected.iter().zip(actual) {
         let got = b_got.borrow();
