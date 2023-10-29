@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use anyhow::Error;
-use lexer::token::{TokenType, Token};
+use lexer::token::{Token, TokenType};
 use opcode::{Instructions, Opcode};
 use parser::ast::{
     BlockStatement, BooleanLiteral, Expression, IntegerLiteral, Literal, Node, Statement,
@@ -370,9 +370,9 @@ impl Compiler {
             }
             Expression::Infix(infix_expression) => {
                 self.compile_operands(
-                    &infix_expression.left, 
-                    &infix_expression.right, 
-                    infix_expression.operator.clone()
+                    &infix_expression.left,
+                    &infix_expression.right,
+                    infix_expression.operator.clone(),
                 )?;
 
                 match infix_expression.operator.token_type {

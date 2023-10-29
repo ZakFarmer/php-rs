@@ -54,7 +54,6 @@ fn test_define() -> Result<(), Error> {
                 index: 1,
             },
         ),
-
     ]);
 
     let mut global = SymbolTable::new();
