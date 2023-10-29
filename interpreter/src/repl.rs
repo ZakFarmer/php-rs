@@ -48,7 +48,6 @@ pub fn init_repl() -> Result<(), Error> {
                         match vm.run() {
                             Ok(_) => {
                                 let last_popped = vm.last_popped_stack_elem();
-                                println!("{}", last_popped);
                             }
                             Err(err) => {
                                 println!("Error: {}", err);

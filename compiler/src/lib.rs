@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use anyhow::Error;
-use lexer::token::TokenType;
+use lexer::token::{TokenType, Token};
 use opcode::{Instructions, Opcode};
 use parser::ast::{
     BlockStatement, BooleanLiteral, Expression, IntegerLiteral, Literal, Node, Statement,
@@ -257,10 +257,10 @@ impl Compiler {
         &mut self,
         left: &Box<Expression>,
         right: &Box<Expression>,
-        operator: &str,
+        operator: Token,
     ) -> Result<(), Error> {
-        match operator {
-            "<" => {
+        match operator.token_type {
+            TokenType::Lt => {
                 self.compile_expression(right)?;
                 self.compile_expression(left)?;
             }
@@ -369,17 +369,11 @@ impl Compiler {
                 Ok(())
             }
             Expression::Infix(infix_expression) => {
-                if infix_expression.operator.token_type == TokenType::Lt {
-                    self.compile_expression(&infix_expression.right)?;
-                    self.compile_expression(&infix_expression.left)?;
-
-                    self.emit(opcode::Opcode::OpGreaterThan, vec![]);
-
-                    return Ok(());
-                }
-
-                self.compile_expression(&infix_expression.left)?;
-                self.compile_expression(&infix_expression.right)?;
+                self.compile_operands(
+                    &infix_expression.left, 
+                    &infix_expression.right, 
+                    infix_expression.operator.clone()
+                )?;
 
                 match infix_expression.operator.token_type {
                     TokenType::Plus => self.emit(opcode::Opcode::OpAdd, vec![]),
