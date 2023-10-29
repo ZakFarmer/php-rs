@@ -38,7 +38,6 @@ impl std::fmt::Display for Object {
 
                 write!(f, "fn({}) {{\n{}\n}}", parameters_string, body)
             }
-            Object::CompiledFunction(function) => write!(f, "{}", function),
             Object::Array(elements) => {
                 let mut elements_string = String::new();
 
@@ -54,6 +53,7 @@ impl std::fmt::Display for Object {
             }
             Object::Return(value) => write!(f, "{}", value),
             Object::Null => write!(f, "null"),
+            _ => Ok(()),
         }
     }
 }
@@ -61,11 +61,15 @@ impl std::fmt::Display for Object {
 #[derive(Clone, Debug, PartialEq)]
 pub struct CompiledFunction {
     pub instructions: Instructions,
+    pub num_locals: usize,
 }
 
 impl CompiledFunction {
-    pub fn new(instructions: Instructions) -> Self {
-        Self { instructions }
+    pub fn new(instructions: Instructions, num_locals: usize) -> Self {
+        Self { 
+            instructions,
+            num_locals,
+        }
     }
 
     pub fn instructions(&self) -> &Instructions {

@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use anyhow::Error;
-use lexer::token::TokenType;
+use lexer::token::{Token, TokenType};
 use opcode::{Instructions, Opcode};
 use parser::ast::{
     BlockStatement, BooleanLiteral, Expression, IntegerLiteral, Literal, Node, Statement,
@@ -257,10 +257,10 @@ impl Compiler {
         &mut self,
         left: &Box<Expression>,
         right: &Box<Expression>,
-        operator: &str,
+        operator: Token,
     ) -> Result<(), Error> {
-        match operator {
-            "<" => {
+        match operator.token_type {
+            TokenType::Lt => {
                 self.compile_expression(right)?;
                 self.compile_expression(left)?;
             }
@@ -300,6 +300,10 @@ impl Compiler {
             }
             Expression::Function(function_literal) => {
                 self.enter_scope();
+                
+                for parameter in function_literal.parameters.iter() {
+                    self.symbol_table.define(&parameter.value);
+                }
 
                 self.compile_block_statement(&function_literal.body)?;
 
@@ -311,9 +315,10 @@ impl Compiler {
                     self.emit(Opcode::OpReturn, vec![]);
                 }
 
+                let num_locals = self.symbol_table.num_definitions;
                 let instructions = self.exit_scope();
 
-                let compiled_function = Rc::from(object::CompiledFunction::new(instructions));
+                let compiled_function = Rc::from(object::CompiledFunction::new(instructions, num_locals));
 
                 let operands =
                     vec![self.add_constant(object::Object::CompiledFunction(compiled_function))];
@@ -324,6 +329,10 @@ impl Compiler {
             }
             Expression::Call(call_expression) => {
                 self.compile_expression(&call_expression.function)?;
+
+                for argument in call_expression.arguments.iter() {
+                    self.compile_expression(argument)?;
+                }
 
                 self.emit(Opcode::OpCall, vec![call_expression.arguments.len()]);
 
@@ -369,17 +378,11 @@ impl Compiler {
                 Ok(())
             }
             Expression::Infix(infix_expression) => {
-                if infix_expression.operator.token_type == TokenType::Lt {
-                    self.compile_expression(&infix_expression.right)?;
-                    self.compile_expression(&infix_expression.left)?;
-
-                    self.emit(opcode::Opcode::OpGreaterThan, vec![]);
-
-                    return Ok(());
-                }
-
-                self.compile_expression(&infix_expression.left)?;
-                self.compile_expression(&infix_expression.right)?;
+                self.compile_operands(
+                    &infix_expression.left,
+                    &infix_expression.right,
+                    infix_expression.operator.clone(),
+                )?;
 
                 match infix_expression.operator.token_type {
                     TokenType::Plus => self.emit(opcode::Opcode::OpAdd, vec![]),

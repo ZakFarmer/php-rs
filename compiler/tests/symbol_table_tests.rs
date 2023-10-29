@@ -26,16 +26,32 @@ fn test_define() -> Result<(), Error> {
             "c".to_string(),
             Symbol {
                 name: "c".to_string(),
-                scope: SymbolScope::Global,
-                index: 2,
+                scope: SymbolScope::Local,
+                index: 0,
             },
         ),
         (
             "d".to_string(),
             Symbol {
                 name: "d".to_string(),
-                scope: SymbolScope::Global,
-                index: 3,
+                scope: SymbolScope::Local,
+                index: 1,
+            },
+        ),
+        (
+            "e".to_string(),
+            Symbol {
+                name: "e".to_string(),
+                scope: SymbolScope::Local,
+                index: 0,
+            },
+        ),
+        (
+            "f".to_string(),
+            Symbol {
+                name: "f".to_string(),
+                scope: SymbolScope::Local,
+                index: 1,
             },
         ),
     ]);
@@ -52,6 +68,34 @@ fn test_define() -> Result<(), Error> {
 
     if b.name != "b" {
         panic!("b.name not 'b'. got={}", b.name);
+    }
+
+    let mut first_local = SymbolTable::new_enclosed(global.clone());
+
+    let c = first_local.define("c");
+
+    if c.name != "c" {
+        panic!("c.name not 'c'. got={}", c.name);
+    }
+
+    let d = first_local.define("d");
+
+    if d.name != "d" {
+        panic!("d.name not 'd'. got={}", d.name);
+    }
+
+    let mut second_local = SymbolTable::new_enclosed(first_local.clone());
+
+    let e = second_local.define("e");
+
+    if e.name != "e" {
+        panic!("e.name not 'e'. got={}", e.name);
+    }
+
+    let f = second_local.define("f");
+
+    if f.name != "f" {
+        panic!("f.name not 'f'. got={}", f.name);
     }
 
     Ok(())

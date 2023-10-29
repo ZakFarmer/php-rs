@@ -234,6 +234,32 @@ fn test_functions_with_no_arguments() -> Result<(), Error> {
 }
 
 #[test]
+fn test_functions_with_arguments() -> Result<(), Error> {
+    let tests = vec![
+        VmTestCase {
+            input: "$identity = function ($x) { $x; }; $identity(4);".to_string(),
+            expected: Object::Integer(4),
+        },
+        VmTestCase {
+            input: "$identity = function ($x) { return $x; }; $identity(4);".to_string(),
+            expected: Object::Integer(4),
+        },
+        VmTestCase {
+            input: "$double = function ($x) { $x * 2; }; $double(4);".to_string(),
+            expected: Object::Integer(8),
+        },
+        VmTestCase {
+            input: "$add = function ($x, $y) { $x + $y; }; $add(4, 5);".to_string(),
+            expected: Object::Integer(9),
+        },
+    ];
+
+    run_vm_tests(tests)?;
+
+    Ok(())
+}
+
+#[test]
 fn test_functions_with_no_return_value() -> Result<(), Error> {
     let tests = vec![VmTestCase {
         input: "$x = function () { }; $x();".to_string(),

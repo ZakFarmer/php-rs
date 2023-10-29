@@ -6,6 +6,7 @@ use object::Object;
 use parser::{ast::Node, Parser};
 use vm::{Vm, GLOBALS_SIZE};
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use web_sys::console;
 
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
@@ -67,7 +68,17 @@ fn execute(input: &str, state: &mut ExecutionState) -> Result<String, String> {
     state.symbol_table = compiler.symbol_table;
     state.globals = vm.globals.clone();
 
-    Ok(vm.last_popped_stack_elem().to_string())
+    let last_popped = vm.last_popped_stack_elem();
+
+    match last_popped.as_ref() {
+        Object::Integer(i) => return Ok(i.to_string()),
+        Object::Boolean(b) => return Ok(b.to_string()),
+        Object::String(s) => return Ok(s.to_string()),
+        Object::Null => return Ok("null".to_string()),
+        _ => {}
+    }
+
+    Ok("".to_string())
 }
 
 #[wasm_bindgen]

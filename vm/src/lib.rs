@@ -44,10 +44,36 @@ impl Vm {
         &self.globals
     }
 
-    pub fn new(bytecode: Bytecode) -> Self {
-        let empty_frame = frame::Frame::new(CompiledFunction::new(Instructions(vec![])), 0);
+    fn call_function(&mut self, num_args: usize) {
+        let function = &*self.stack[self.stack_pointer - 1 - num_args];
 
-        let main_function = CompiledFunction::new(bytecode.instructions.clone());
+        match function {
+            Object::CompiledFunction(compiled_function) => {
+                let base_pointer = self.stack_pointer - num_args;
+                let cloned_function = compiled_function.as_ref().clone();
+
+                let frame = frame::Frame::new(
+                    cloned_function,
+                    base_pointer,
+                );
+
+                self.stack_pointer = base_pointer + compiled_function.num_locals as usize;
+                self.push_frame(frame);
+            }
+            _ => {
+                panic!("calling non-function object: {}", function);
+            }
+        }
+    }
+
+    pub fn new(bytecode: Bytecode) -> Self {
+        let empty_frame = frame::Frame::new(CompiledFunction::new(Instructions(vec![]), 0), 0);
+
+        let main_function = CompiledFunction::new(
+            bytecode.instructions.clone(),
+             0
+        );
+
         let main_frame = frame::Frame::new(main_function, 0);
 
         let mut frames = vec![empty_frame; MAX_FRAMES];
@@ -157,19 +183,11 @@ impl Vm {
                     self.stack[base_pointer + local_index] = self.pop();
                 }
                 Opcode::OpCall => {
+                    let num_args = instructions[instruction_pointer + 1] as usize;
+
                     self.current_frame().instruction_pointer += 1;
 
-                    let function = &*self.stack[self.stack_pointer - 1];
-
-                    if let Object::CompiledFunction(function) = function {
-                        let frame =
-                            frame::Frame::new(function.as_ref().clone(), self.stack_pointer);
-
-                        self.stack_pointer = frame.base_pointer;
-                        self.push_frame(frame);
-                    } else {
-                        return Err(Error::msg(format!("calling non-function: {}", function)));
-                    }
+                    self.call_function(num_args);
                 }
                 Opcode::OpReturn => {
                     let frame = self.pop_frame();

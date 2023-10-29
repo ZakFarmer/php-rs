@@ -252,14 +252,21 @@ fn test_functions() -> Result<(), Error> {
         expected_constants: vec![
             Object::Integer(5),
             Object::Integer(10),
-            Object::CompiledFunction(Rc::new(object::CompiledFunction::new(concat_instructions(
-                &vec![
-                    opcode::make(opcode::Opcode::OpConst, &vec![0]),
-                    opcode::make(opcode::Opcode::OpConst, &vec![1]),
-                    opcode::make(opcode::Opcode::OpAdd, &vec![]),
-                    opcode::make(opcode::Opcode::OpReturnValue, &vec![]),
-                ],
-            )))),
+            Object::CompiledFunction(
+                Rc::new(
+                    object::CompiledFunction::new(
+                        concat_instructions(
+                            &vec![
+                                opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                                opcode::make(opcode::Opcode::OpConst, &vec![1]),
+                                opcode::make(opcode::Opcode::OpAdd, &vec![]),
+                                opcode::make(opcode::Opcode::OpReturnValue, &vec![]),
+                            ],
+                        ),
+                        0
+                    )
+                )
+            ),
         ],
         expected_instructions: vec![
             opcode::make(opcode::Opcode::OpConst, &vec![2]),
@@ -280,7 +287,7 @@ fn test_functions_with_no_return_value() -> Result<(), Error> {
             object::CompiledFunction::new(concat_instructions(&vec![opcode::make(
                 opcode::Opcode::OpReturn,
                 &vec![],
-            )])),
+            )]), 0),
         ))],
         expected_instructions: vec![
             opcode::make(opcode::Opcode::OpConst, &vec![0]),
@@ -295,25 +302,47 @@ fn test_functions_with_no_return_value() -> Result<(), Error> {
 
 #[test]
 fn test_function_calls() -> Result<(), Error> {
-    let tests = vec![CompilerTestCase {
-        input: "$noArg = function () { return 24; }; $noArg();".to_string(),
-        expected_constants: vec![
-            Object::Integer(24),
-            Object::CompiledFunction(Rc::new(object::CompiledFunction::new(concat_instructions(
-                &vec![
-                    opcode::make(opcode::Opcode::OpConst, &vec![0]),
-                    opcode::make(opcode::Opcode::OpReturnValue, &vec![]),
-                ],
-            )))),
-        ],
-        expected_instructions: vec![
-            opcode::make(opcode::Opcode::OpConst, &vec![1]),
-            opcode::make(opcode::Opcode::OpSetGlobal, &vec![0]),
-            opcode::make(opcode::Opcode::OpGetGlobal, &vec![0]),
-            opcode::make(opcode::Opcode::OpCall, &vec![0]),
-            opcode::make(opcode::Opcode::OpPop, &vec![]),
-        ],
-    }];
+    let tests = vec![
+        CompilerTestCase {
+            input: "$noArg = function () { return 24; }; $noArg();".to_string(),
+            expected_constants: vec![
+                Object::Integer(24),
+                Object::CompiledFunction(Rc::new(object::CompiledFunction::new(concat_instructions(
+                    &vec![
+                        opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                        opcode::make(opcode::Opcode::OpReturnValue, &vec![]),
+                    ],
+                ), 0))),
+            ],
+            expected_instructions: vec![
+                opcode::make(opcode::Opcode::OpConst, &vec![1]),
+                opcode::make(opcode::Opcode::OpSetGlobal, &vec![0]),
+                opcode::make(opcode::Opcode::OpGetGlobal, &vec![0]),
+                opcode::make(opcode::Opcode::OpCall, &vec![0]),
+                opcode::make(opcode::Opcode::OpPop, &vec![]),
+            ],
+        },
+        CompilerTestCase {
+            input: "$oneArg = function ($a) { return $a; }; $oneArg(24);".to_string(),
+            expected_constants: vec![
+                Object::CompiledFunction(Rc::new(object::CompiledFunction::new(concat_instructions(
+                    &vec![
+                        opcode::make(opcode::Opcode::OpGetLocal, &vec![0]),
+                        opcode::make(opcode::Opcode::OpReturnValue, &vec![]),
+                    ],
+                ), 1))),
+                Object::Integer(24),
+            ],
+            expected_instructions: vec![
+                opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                opcode::make(opcode::Opcode::OpSetGlobal, &vec![0]),
+                opcode::make(opcode::Opcode::OpGetGlobal, &vec![0]),
+                opcode::make(opcode::Opcode::OpConst, &vec![1]),
+                opcode::make(opcode::Opcode::OpCall, &vec![1]),
+                opcode::make(opcode::Opcode::OpPop, &vec![]),
+            ],
+        },
+    ];
 
     run_compiler_tests(tests)?;
 
