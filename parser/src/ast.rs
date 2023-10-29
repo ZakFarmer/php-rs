@@ -6,6 +6,16 @@ pub enum Node {
     Statement(Statement),
 }
 
+impl std::fmt::Debug for Node {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Node::Expression(expression) => write!(f, "{:?}", expression),
+            Node::Program(program) => write!(f, "{:?}", program),
+            Node::Statement(statement) => write!(f, "{:?}", statement),
+        }
+    }
+}
+
 impl std::fmt::Display for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
@@ -255,14 +265,14 @@ pub struct IndexExpression {
 pub struct InfixExpression {
     pub token: Token,
     pub left: Box<Expression>,
-    pub operator: String,
+    pub operator: Token,
     pub right: Box<Expression>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct PrefixExpression {
     pub token: Token,
-    pub operator: String,
+    pub operator: Token,
     pub right: Box<Expression>,
 }
 

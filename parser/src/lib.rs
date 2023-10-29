@@ -389,7 +389,7 @@ impl<'a> Parser<'a> {
         // Call the prefix parse function
         let mut left = prefix_fn.unwrap()(self);
 
-        while ! self.peek_token_is(&TokenType::Semicolon) && precedence < self.peek_precedence() {
+        while !self.peek_token_is(&TokenType::Semicolon) && precedence < self.peek_precedence() {
             let infix_fn = self
                 .infix_parse_fns
                 .get(&self.peek_token.as_ref().unwrap().token_type)
@@ -661,7 +661,7 @@ impl<'a> Parser<'a> {
     fn parse_infix_expression(&mut self, left: Expression) -> Result<Expression> {
         let current_token = self.current_token.clone().unwrap();
 
-        let operator = self.current_token.as_ref().unwrap().to_string();
+        let operator = self.current_token.as_ref().unwrap().clone();
 
         let precedence = self.current_precedence();
 
@@ -685,7 +685,7 @@ impl<'a> Parser<'a> {
     fn parse_prefix_expression(&mut self) -> Result<Expression> {
         let current_token = self.current_token.clone().unwrap();
 
-        let operator = self.current_token.as_ref().unwrap().to_string();
+        let operator = self.current_token.as_ref().unwrap().clone();
 
         self.next_token();
 

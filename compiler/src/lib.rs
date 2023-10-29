@@ -1,11 +1,13 @@
 use std::rc::Rc;
 
 use anyhow::Error;
-use opcode::{Opcode, Instructions};
+use lexer::token::TokenType;
+use opcode::{Instructions, Opcode};
 use parser::ast::{
-    BlockStatement, BooleanLiteral, Expression, IntegerLiteral, Literal, Node, Statement, StringLiteral,
+    BlockStatement, BooleanLiteral, Expression, IntegerLiteral, Literal, Node, Statement,
+    StringLiteral,
 };
-use symbol_table::SymbolTable;
+use symbol_table::{SymbolScope, SymbolTable};
 
 pub mod symbol_table;
 
@@ -91,6 +93,7 @@ impl Compiler {
 
         self.scopes.push(scope);
         self.scope_index += 1;
+        self.symbol_table = SymbolTable::new_enclosed(self.symbol_table.clone());
     }
 
     pub fn exit_scope(&mut self) -> opcode::Instructions {
@@ -98,6 +101,10 @@ impl Compiler {
 
         self.scopes.pop();
         self.scope_index -= 1;
+
+        let outer = self.symbol_table.outer.as_ref().unwrap().as_ref().clone();
+
+        self.symbol_table = outer;
 
         instructions
     }
@@ -113,7 +120,7 @@ impl Compiler {
     fn add_constant(&mut self, obj: object::Object) -> usize {
         self.constants.push(obj.into());
 
-        return (self.constants.len() - 1) as usize;
+        (self.constants.len() - 1) as usize
     }
 
     fn change_operand(&mut self, position: usize, operand: usize) {
@@ -124,19 +131,19 @@ impl Compiler {
         self.replace_instruction(position, new_instruction);
     }
 
-    pub fn add_instructions(&mut self, ins: &Instructions) -> usize {
+    pub fn add_instructions(&mut self, instructions: &Instructions) -> usize {
         let position = self.current_instructions().0.len();
 
         let new_instruction = self.scopes[self.scope_index]
             .instructions
-            .merge_instructions(ins);
+            .merge_instructions(instructions);
 
         self.scopes[self.scope_index].instructions = new_instruction;
-        return position;
+        position
     }
 
     pub fn current_instructions(&self) -> &opcode::Instructions {
-        return &self.scopes[self.scope_index].instructions;
+        &self.scopes[self.scope_index].instructions
     }
 
     fn replace_instruction(&mut self, position: usize, new_instruction: opcode::Instructions) {
@@ -153,18 +160,18 @@ impl Compiler {
             opcode: op,
             position,
         };
-        
+
         self.scopes[self.scope_index].last_instruction = last;
         self.scopes[self.scope_index].previous_instruction = previous;
-        
+
         Ok(())
     }
 
     fn replace_last_pop_with_return(&mut self) {
         let last_position = self.scopes[self.scope_index].last_instruction.position;
-        self.replace_instruction(last_position, opcode::make(Opcode::OpReturn, &vec![]));
+        self.replace_instruction(last_position, opcode::make(Opcode::OpReturnValue, &vec![]));
 
-        self.scopes[self.scope_index].last_instruction.opcode = Opcode::OpReturn;
+        self.scopes[self.scope_index].last_instruction.opcode = Opcode::OpReturnValue;
     }
 
     pub fn bytecode(&self) -> Bytecode {
@@ -179,7 +186,7 @@ impl Compiler {
 
         let index = self.add_instructions(&instructions);
 
-        self.set_last_instruction(op, index);
+        _ = self.set_last_instruction(op, index);
 
         index
     }
@@ -212,32 +219,37 @@ impl Compiler {
 
     fn compile_statement(&mut self, s: &Statement) -> Result<(), Error> {
         match s {
-            Statement::Assign(a) => {
-                self.compile_expression(&a.value)?;
+            Statement::Assign(assignment) => {
+                self.compile_expression(&assignment.value)?;
 
-                let symbol = self.symbol_table.define(&a.name.value);
+                let symbol = self.symbol_table.define(&assignment.name.value);
 
-                self.emit(Opcode::OpSetGlobal, vec![symbol.index]);
+                self.emit(
+                    if symbol.scope == SymbolScope::Global {
+                        Opcode::OpSetGlobal
+                    } else {
+                        Opcode::OpSetLocal
+                    },
+                    vec![symbol.index],
+                );
 
                 Ok(())
             }
-            Statement::Return(r) => {
-                self.compile_expression(&r.return_value)?;
+            Statement::Return(return_statement) => {
+                self.compile_expression(&return_statement.return_value)?;
 
                 self.emit(opcode::Opcode::OpReturnValue, vec![]);
 
                 Ok(())
             }
-            Statement::Expr(e) => {
-                self.compile_expression(e)?;
+            Statement::Expr(expression) => {
+                self.compile_expression(expression)?;
 
                 self.emit(Opcode::OpPop, vec![]);
 
                 Ok(())
             }
-            _ => {
-                return Err(Error::msg("compile_statement: unimplemented"));
-            }
+            _ => Err(Error::msg("compile_statement: unimplemented")),
         }
     }
 
@@ -265,9 +277,18 @@ impl Compiler {
             Expression::Identifier(identifier) => {
                 let symbol = self.symbol_table.resolve(&identifier.value);
 
+                dbg!(&symbol);
+
                 match symbol {
                     Some(symbol) => {
-                        self.emit(Opcode::OpGetGlobal, vec![symbol.index]);
+                        self.emit(
+                            if symbol.scope == SymbolScope::Global {
+                                Opcode::OpGetGlobal
+                            } else {
+                                Opcode::OpGetLocal
+                            },
+                            vec![symbol.index],
+                        );
                     }
                     None => {
                         return Err(Error::msg(format!(
@@ -288,22 +309,17 @@ impl Compiler {
                     self.replace_last_pop_with_return();
                 }
 
-                if ! self.last_instruction_is(Opcode::OpReturnValue) {
+                if !self.last_instruction_is(Opcode::OpReturnValue) {
                     self.emit(Opcode::OpReturn, vec![]);
                 }
-                
+
                 let instructions = self.exit_scope();
 
-                let compiled_function = Rc::from(
-                    object::CompiledFunction::new(
-                        instructions,
-                    ),
-                );
+                let compiled_function = Rc::from(object::CompiledFunction::new(instructions));
 
-                let operands = vec![self.add_constant(
-                    object::Object::CompiledFunction(compiled_function)
-                )];
-                
+                let operands =
+                    vec![self.add_constant(object::Object::CompiledFunction(compiled_function))];
+
                 self.emit(Opcode::OpConst, operands);
 
                 Ok(())
@@ -355,21 +371,33 @@ impl Compiler {
                 Ok(())
             }
             Expression::Infix(infix_expression) => {
-                self.compile_operands(
-                    &infix_expression.left,
-                    &infix_expression.right,
-                    &infix_expression.operator,
-                )?;
+                if infix_expression.operator.token_type == TokenType::Lt {
+                    self.compile_expression(&infix_expression.right)?;
+                    self.compile_expression(&infix_expression.left)?;
 
-                match infix_expression.operator.as_str() {
-                    "+" => self.emit(opcode::Opcode::OpAdd, vec![]),
-                    "-" => self.emit(opcode::Opcode::OpSub, vec![]),
-                    "*" => self.emit(opcode::Opcode::OpMul, vec![]),
-                    "/" => self.emit(opcode::Opcode::OpDiv, vec![]),
-                    ">" | "<" => self.emit(opcode::Opcode::OpGreaterThan, vec![]),
-                    "==" => self.emit(opcode::Opcode::OpEqual, vec![]),
-                    "!=" => self.emit(opcode::Opcode::OpNotEqual, vec![]),
-                    _ => return Err(Error::msg("compile_expression: unimplemented")),
+                    self.emit(opcode::Opcode::OpGreaterThan, vec![]);
+
+                    return Ok(());
+                }
+
+                self.compile_expression(&infix_expression.left)?;
+                self.compile_expression(&infix_expression.right)?;
+
+                match infix_expression.operator.token_type {
+                    TokenType::Plus => self.emit(opcode::Opcode::OpAdd, vec![]),
+                    TokenType::Minus => self.emit(opcode::Opcode::OpSub, vec![]),
+                    TokenType::Asterisk => self.emit(opcode::Opcode::OpMul, vec![]),
+                    TokenType::Slash => self.emit(opcode::Opcode::OpDiv, vec![]),
+                    TokenType::Gt | TokenType::Lt => {
+                        self.emit(opcode::Opcode::OpGreaterThan, vec![])
+                    }
+                    TokenType::Eq => self.emit(opcode::Opcode::OpEqual, vec![]),
+                    TokenType::NotEq => self.emit(opcode::Opcode::OpNotEqual, vec![]),
+                    _ => {
+                        return Err(Error::msg(
+                            "compile_expression: unimplemented infix operator",
+                        ))
+                    }
                 };
 
                 Ok(())
@@ -377,10 +405,14 @@ impl Compiler {
             Expression::Prefix(prefix_expression) => {
                 self.compile_expression(&prefix_expression.right)?;
 
-                match prefix_expression.operator.as_str() {
-                    "!" => self.emit(opcode::Opcode::OpBang, vec![]),
-                    "-" => self.emit(opcode::Opcode::OpMinus, vec![]),
-                    _ => return Err(Error::msg("compile_expression: unimplemented")),
+                match prefix_expression.operator.token_type {
+                    TokenType::Bang => self.emit(opcode::Opcode::OpBang, vec![]),
+                    TokenType::Minus => self.emit(opcode::Opcode::OpMinus, vec![]),
+                    _ => {
+                        return Err(Error::msg(
+                            "compile_expression: unimplemented prefix operator",
+                        ))
+                    }
                 };
 
                 Ok(())

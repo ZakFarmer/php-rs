@@ -4,7 +4,7 @@ use anyhow::Error;
 use compiler::Compiler;
 use lexer::Lexer;
 use object::Object;
-use opcode::{concat_instructions, Instructions};
+use opcode::concat_instructions;
 use parser::ast::Node;
 
 struct CompilerTestCase {
@@ -26,11 +26,7 @@ fn test_array_expressions() -> Result<(), Error> {
         },
         CompilerTestCase {
             input: "[1, 2, 3]".to_string(),
-            expected_constants: vec![
-                Object::Integer(1),
-                Object::Integer(2),
-                Object::Integer(3),
-            ],
+            expected_constants: vec![Object::Integer(1), Object::Integer(2), Object::Integer(3)],
             expected_instructions: vec![
                 opcode::make(opcode::Opcode::OpConst, &vec![0]),
                 opcode::make(opcode::Opcode::OpConst, &vec![1]),
@@ -165,7 +161,13 @@ fn test_compilation_scopes() -> Result<(), Error> {
 
         compiler.emit(opcode::Opcode::OpSub, vec![]);
 
-        assert_eq!(compiler.scopes()[compiler.scope_index()].instructions.0.len(), 1);
+        assert_eq!(
+            compiler.scopes()[compiler.scope_index()]
+                .instructions
+                .0
+                .len(),
+            1
+        );
 
         let last = compiler.scopes()[compiler.scope_index()].last_instruction;
         assert_eq!(last.opcode, opcode::Opcode::OpSub);
@@ -176,13 +178,24 @@ fn test_compilation_scopes() -> Result<(), Error> {
 
         compiler.emit(opcode::Opcode::OpAdd, vec![]);
 
-        assert_eq!(compiler.scopes()[compiler.scope_index()].instructions.0.len(), 2);
+        assert_eq!(
+            compiler.scopes()[compiler.scope_index()]
+                .instructions
+                .0
+                .len(),
+            2
+        );
     }
 
     let last = compiler.scopes()[compiler.scope_index()].last_instruction;
 
     assert_eq!(last.opcode, opcode::Opcode::OpAdd);
-    assert_eq!(compiler.scopes()[compiler.scope_index()].previous_instruction.opcode, opcode::Opcode::OpMul);
+    assert_eq!(
+        compiler.scopes()[compiler.scope_index()]
+            .previous_instruction
+            .opcode,
+        opcode::Opcode::OpMul
+    );
 
     let previous = compiler.scopes()[compiler.scope_index()].previous_instruction;
     assert_eq!(previous.opcode, opcode::Opcode::OpMul);
@@ -234,50 +247,46 @@ fn test_conditionals() -> Result<(), Error> {
 
 #[test]
 fn test_functions() -> Result<(), Error> {
-    let tests = vec![
-        CompilerTestCase {
-            input: "function () { return 5 + 10; }".to_string(),
-            expected_constants: vec![
-                Object::Integer(5),
-                Object::Integer(10),
-                Object::CompiledFunction(Rc::new(object::CompiledFunction::new(concat_instructions(&vec![
-                        opcode::make(opcode::Opcode::OpConst, &vec![0]),
-                        opcode::make(opcode::Opcode::OpConst, &vec![1]),
-                        opcode::make(opcode::Opcode::OpAdd, &vec![]),
-                        opcode::make(opcode::Opcode::OpReturnValue, &vec![]),
-                    ]
-                )))),
-            ],
-            expected_instructions: vec![
-                opcode::make(opcode::Opcode::OpConst, &vec![2]),
-                opcode::make(opcode::Opcode::OpPop, &vec![]),
-            ],
-        },
-    ];
+    let tests = vec![CompilerTestCase {
+        input: "function () { return 5 + 10; }".to_string(),
+        expected_constants: vec![
+            Object::Integer(5),
+            Object::Integer(10),
+            Object::CompiledFunction(Rc::new(object::CompiledFunction::new(concat_instructions(
+                &vec![
+                    opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                    opcode::make(opcode::Opcode::OpConst, &vec![1]),
+                    opcode::make(opcode::Opcode::OpAdd, &vec![]),
+                    opcode::make(opcode::Opcode::OpReturnValue, &vec![]),
+                ],
+            )))),
+        ],
+        expected_instructions: vec![
+            opcode::make(opcode::Opcode::OpConst, &vec![2]),
+            opcode::make(opcode::Opcode::OpPop, &vec![]),
+        ],
+    }];
 
     run_compiler_tests(tests)?;
 
     Ok(())
-
 }
 
 #[test]
 fn test_functions_with_no_return_value() -> Result<(), Error> {
-    let tests = vec![
-        CompilerTestCase {
-            input: "function() { }".to_string(),
-            expected_constants: vec![
-                Object::CompiledFunction(Rc::new(object::CompiledFunction::new(concat_instructions(&vec![
-                        opcode::make(opcode::Opcode::OpReturn, &vec![]),
-                    ]
-                )))),
-            ],
-            expected_instructions: vec![
-                opcode::make(opcode::Opcode::OpConst, &vec![0]),
-                opcode::make(opcode::Opcode::OpPop, &vec![]),
-            ],
-        },
-    ];
+    let tests = vec![CompilerTestCase {
+        input: "function() { }".to_string(),
+        expected_constants: vec![Object::CompiledFunction(Rc::new(
+            object::CompiledFunction::new(concat_instructions(&vec![opcode::make(
+                opcode::Opcode::OpReturn,
+                &vec![],
+            )])),
+        ))],
+        expected_instructions: vec![
+            opcode::make(opcode::Opcode::OpConst, &vec![0]),
+            opcode::make(opcode::Opcode::OpPop, &vec![]),
+        ],
+    }];
 
     run_compiler_tests(tests)?;
 
@@ -286,26 +295,25 @@ fn test_functions_with_no_return_value() -> Result<(), Error> {
 
 #[test]
 fn test_function_calls() -> Result<(), Error> {
-    let tests = vec![
-        CompilerTestCase {
-            input: "$noArg = function () { return 24; }; $noArg();".to_string(),
-            expected_constants: vec![
-                Object::Integer(24),
-                Object::CompiledFunction(Rc::new(object::CompiledFunction::new(concat_instructions(&vec![
-                        opcode::make(opcode::Opcode::OpConst, &vec![0]),
-                        opcode::make(opcode::Opcode::OpReturnValue, &vec![]),
-                    ]
-                )))),
-            ],
-            expected_instructions: vec![
-                opcode::make(opcode::Opcode::OpConst, &vec![1]),
-                opcode::make(opcode::Opcode::OpSetGlobal, &vec![0]),
-                opcode::make(opcode::Opcode::OpGetGlobal, &vec![0]),
-                opcode::make(opcode::Opcode::OpCall, &vec![0]),
-                opcode::make(opcode::Opcode::OpPop, &vec![]),
-            ],
-        },
-    ];
+    let tests = vec![CompilerTestCase {
+        input: "$noArg = function () { return 24; }; $noArg();".to_string(),
+        expected_constants: vec![
+            Object::Integer(24),
+            Object::CompiledFunction(Rc::new(object::CompiledFunction::new(concat_instructions(
+                &vec![
+                    opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                    opcode::make(opcode::Opcode::OpReturnValue, &vec![]),
+                ],
+            )))),
+        ],
+        expected_instructions: vec![
+            opcode::make(opcode::Opcode::OpConst, &vec![1]),
+            opcode::make(opcode::Opcode::OpSetGlobal, &vec![0]),
+            opcode::make(opcode::Opcode::OpGetGlobal, &vec![0]),
+            opcode::make(opcode::Opcode::OpCall, &vec![0]),
+            opcode::make(opcode::Opcode::OpPop, &vec![]),
+        ],
+    }];
 
     run_compiler_tests(tests)?;
 
@@ -445,8 +453,8 @@ fn test_string_expressions() -> Result<(), Error> {
                 opcode::make(opcode::Opcode::OpConst, &vec![1]),
                 opcode::make(opcode::Opcode::OpAdd, &vec![1]),
                 opcode::make(opcode::Opcode::OpPop, &vec![0]),
-            ]
-        }
+            ],
+        },
     ];
 
     run_compiler_tests(tests)?;
@@ -466,14 +474,14 @@ fn run_compiler_tests(tests: Vec<CompilerTestCase>) -> Result<(), Error> {
         println!("Testing input: {}", test.input.to_string());
         println!("Constants: {:?}", bytecode.constants);
 
-        test_constants(&test.expected_constants, &bytecode.constants);
-        test_instructions(&test.expected_instructions, &bytecode.instructions);
+        assert_constants(&test.expected_constants, &bytecode.constants);
+        assert_instructions(&test.expected_instructions, &bytecode.instructions);
     }
 
     Ok(())
 }
 
-pub fn test_constants(expected: &Vec<Object>, actual: &Vec<Rc<Object>>) {
+pub fn assert_constants(expected: &Vec<Object>, actual: &Vec<Rc<Object>>) {
     assert_eq!(expected.len(), actual.len());
     for (exp, b_got) in expected.iter().zip(actual) {
         let got = b_got.borrow();
@@ -481,7 +489,7 @@ pub fn test_constants(expected: &Vec<Object>, actual: &Vec<Rc<Object>>) {
     }
 }
 
-fn test_instructions(expected: &Vec<opcode::Instructions>, actual: &opcode::Instructions) {
+fn assert_instructions(expected: &Vec<opcode::Instructions>, actual: &opcode::Instructions) {
     let expected_instructions = concat_instructions(expected);
 
     for (&exp, got) in expected_instructions.0.iter().zip(actual.0.clone()) {
