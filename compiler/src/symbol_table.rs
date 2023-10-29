@@ -1,6 +1,6 @@
 use std::{collections::HashMap, rc::Rc};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum SymbolScope {
     Global,
     Local,
@@ -58,9 +58,12 @@ impl SymbolTable {
     }
 
     pub fn resolve(&self, name: &str) -> Option<Rc<Symbol>> {
-        match self.store.get(name) {
-            Some(symbol) => Some(Rc::clone(symbol)),
-            None => None,
+        let symbol = self.store.get(name);
+
+        if symbol.is_none() && self.outer.is_some() {
+            return self.outer.as_ref().unwrap().resolve(name);
         }
+
+        symbol.cloned()
     }
 }

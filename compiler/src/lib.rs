@@ -7,7 +7,7 @@ use parser::ast::{
     BlockStatement, BooleanLiteral, Expression, IntegerLiteral, Literal, Node, Statement,
     StringLiteral,
 };
-use symbol_table::SymbolTable;
+use symbol_table::{SymbolTable, SymbolScope};
 
 pub mod symbol_table;
 
@@ -224,7 +224,11 @@ impl Compiler {
 
                 let symbol = self.symbol_table.define(&assignment.name.value);
 
-                self.emit(Opcode::OpSetGlobal, vec![symbol.index]);
+                self.emit(if symbol.scope == SymbolScope::Global {
+                    Opcode::OpSetGlobal
+                } else {
+                    Opcode::OpSetLocal
+                }, vec![symbol.index]);
 
                 Ok(())
             }
@@ -270,9 +274,15 @@ impl Compiler {
             Expression::Identifier(identifier) => {
                 let symbol = self.symbol_table.resolve(&identifier.value);
 
+                dbg!(&symbol);
+
                 match symbol {
                     Some(symbol) => {
-                        self.emit(Opcode::OpGetGlobal, vec![symbol.index]);
+                        self.emit(if symbol.scope == SymbolScope::Global { 
+                            Opcode::OpGetGlobal 
+                        } else { 
+                            Opcode::OpGetLocal 
+                        }, vec![symbol.index]);
                     }
                     None => {
                         return Err(Error::msg(format!(

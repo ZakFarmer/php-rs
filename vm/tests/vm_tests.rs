@@ -211,10 +211,22 @@ fn test_conditionals() -> Result<(), Error> {
 
 #[test]
 fn test_functions_with_no_arguments() -> Result<(), Error> {
-    let tests = vec![VmTestCase {
-        input: "$x = function () { return 50 * 2; }; $x();".to_string(),
-        expected: Object::Integer(100),
-    }];
+    let tests = vec![
+        VmTestCase {
+            input: "$x = function () { 50 * 2; }; $x();".to_string(),
+            expected: Object::Integer(100),
+        },
+        VmTestCase {
+            input: "$one = function () { 1; }; $two = function () { 2; }; $one() + $two();"
+                .to_string(),
+            expected: Object::Integer(3),
+        },
+        VmTestCase {
+            input: "$a = function () { 1; }; $b = function () { $a() + 1; }; $c = function () { $b() + 1; }; $c();"
+                .to_string(),
+            expected: Object::Integer(3),
+        },
+    ];
 
     run_vm_tests(tests)?;
 
