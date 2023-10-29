@@ -4,10 +4,7 @@ use anyhow::Error;
 use compiler::Compiler;
 use lexer::Lexer;
 use object::Object;
-use parser::{
-    ast::{BlockStatement, Node},
-    Parser,
-};
+use parser::{ast::Node, Parser};
 use vm::Vm;
 
 struct VmTestCase {
