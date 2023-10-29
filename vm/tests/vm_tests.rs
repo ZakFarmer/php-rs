@@ -234,6 +234,36 @@ fn test_functions_with_no_arguments() -> Result<(), Error> {
 }
 
 #[test]
+fn test_functions_with_no_return_value() -> Result<(), Error> {
+    let tests = vec![
+        VmTestCase {
+            input: "$x = function () { }; $x();".to_string(),
+            expected: Object::Null,
+        },
+    ];
+
+    run_vm_tests(tests)?;
+
+    Ok(())
+}
+
+#[test]
+fn test_first_class_functions() -> Result<(), Error> {
+    let tests = vec![
+        VmTestCase {
+            input: "$returnsOne = function () { 1; }; 
+                    $returnsOneReturner = function () { $returnsOne; };
+                    $returnsOneReturner()();".to_string(),
+            expected: Object::Integer(1),
+        },
+    ];
+
+    run_vm_tests(tests)?;
+
+    Ok(())
+}
+
+#[test]
 fn test_integer_arithmetic() -> Result<(), Error> {
     let tests = vec![
         VmTestCase {

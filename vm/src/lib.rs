@@ -143,6 +143,24 @@ impl Vm {
 
                     self.globals[global_index] = self.pop();
                 }
+                Opcode::OpGetLocal => {
+                    let local_index = instructions[instruction_pointer + 1] as usize;
+
+                    self.current_frame().instruction_pointer += 1;
+
+                    let base_pointer = self.current_frame().base_pointer;
+
+                    self.push(Rc::clone(&self.stack[base_pointer + local_index]));
+                }
+                Opcode::OpSetLocal => {
+                    let local_index = instructions[instruction_pointer + 1] as usize;
+
+                    self.current_frame().instruction_pointer += 1;
+
+                    let base_pointer = self.current_frame().base_pointer;
+
+                    self.stack[base_pointer + local_index] = self.pop();
+                }
                 Opcode::OpCall => {
                     self.current_frame().instruction_pointer += 1;
 
