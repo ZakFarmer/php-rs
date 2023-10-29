@@ -1,7 +1,4 @@
-use std::{
-    borrow::{Borrow, BorrowMut},
-    rc::Rc,
-};
+use std::{borrow::Borrow, rc::Rc};
 
 use anyhow::Error;
 use byteorder::{BigEndian, ByteOrder};
@@ -98,8 +95,6 @@ impl Vm {
             })?;
 
             let opcode = Opcode::from(op);
-
-            dbg!(opcode);
 
             match opcode {
                 Opcode::OpJump => {
