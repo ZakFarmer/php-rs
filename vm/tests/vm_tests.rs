@@ -4,7 +4,10 @@ use anyhow::Error;
 use compiler::Compiler;
 use lexer::Lexer;
 use object::Object;
-use parser::{ast::Node, Parser};
+use parser::{
+    ast::{BlockStatement, Node},
+    Parser,
+};
 use vm::Vm;
 
 struct VmTestCase {
@@ -235,12 +238,10 @@ fn test_functions_with_no_arguments() -> Result<(), Error> {
 
 #[test]
 fn test_functions_with_no_return_value() -> Result<(), Error> {
-    let tests = vec![
-        VmTestCase {
-            input: "$x = function () { }; $x();".to_string(),
-            expected: Object::Null,
-        },
-    ];
+    let tests = vec![VmTestCase {
+        input: "$x = function () { }; $x();".to_string(),
+        expected: Object::Null,
+    }];
 
     run_vm_tests(tests)?;
 
@@ -249,14 +250,13 @@ fn test_functions_with_no_return_value() -> Result<(), Error> {
 
 #[test]
 fn test_first_class_functions() -> Result<(), Error> {
-    let tests = vec![
-        VmTestCase {
-            input: "$returnsOne = function () { 1; }; 
+    let tests = vec![VmTestCase {
+        input: "$returnsOne = function () { 1; }; 
                     $returnsOneReturner = function () { $returnsOne; };
-                    $returnsOneReturner()();".to_string(),
-            expected: Object::Integer(1),
-        },
-    ];
+                    $returnsOneReturner()();"
+            .to_string(),
+        expected: Object::Integer(1),
+    }];
 
     run_vm_tests(tests)?;
 
@@ -375,6 +375,36 @@ fn test_string_expressions() -> Result<(), Error> {
         VmTestCase {
             input: r#""hello" + "world" + "!""#.to_string(),
             expected: Object::String("helloworld!".to_string()),
+        },
+    ];
+
+    run_vm_tests(tests)?;
+
+    Ok(())
+}
+
+#[test]
+fn test_variable_scopes() -> Result<(), Error> {
+    let tests = vec![
+        VmTestCase {
+            input: "$one = 1; $two = 2; $one + $two".to_string(),
+            expected: Object::Integer(3),
+        },
+        VmTestCase {
+            input: "$one = 1; $one".to_string(),
+            expected: Object::Integer(1),
+        },
+        VmTestCase {
+            input: "$one = 1; $two = $one; $two".to_string(),
+            expected: Object::Integer(1),
+        },
+        VmTestCase {
+            input: "$one = 1; $two = $one; $three = $one + $two + 3; $three".to_string(),
+            expected: Object::Integer(5),
+        },
+        VmTestCase {
+            input: "$num = 50; function () { $num }();".to_string(),
+            expected: Object::Integer(50),
         },
     ];
 

@@ -7,7 +7,7 @@ use parser::ast::{
     BlockStatement, BooleanLiteral, Expression, IntegerLiteral, Literal, Node, Statement,
     StringLiteral,
 };
-use symbol_table::{SymbolTable, SymbolScope};
+use symbol_table::{SymbolScope, SymbolTable};
 
 pub mod symbol_table;
 
@@ -224,11 +224,14 @@ impl Compiler {
 
                 let symbol = self.symbol_table.define(&assignment.name.value);
 
-                self.emit(if symbol.scope == SymbolScope::Global {
-                    Opcode::OpSetGlobal
-                } else {
-                    Opcode::OpSetLocal
-                }, vec![symbol.index]);
+                self.emit(
+                    if symbol.scope == SymbolScope::Global {
+                        Opcode::OpSetGlobal
+                    } else {
+                        Opcode::OpSetLocal
+                    },
+                    vec![symbol.index],
+                );
 
                 Ok(())
             }
@@ -278,11 +281,14 @@ impl Compiler {
 
                 match symbol {
                     Some(symbol) => {
-                        self.emit(if symbol.scope == SymbolScope::Global { 
-                            Opcode::OpGetGlobal 
-                        } else { 
-                            Opcode::OpGetLocal 
-                        }, vec![symbol.index]);
+                        self.emit(
+                            if symbol.scope == SymbolScope::Global {
+                                Opcode::OpGetGlobal
+                            } else {
+                                Opcode::OpGetLocal
+                            },
+                            vec![symbol.index],
+                        );
                     }
                     None => {
                         return Err(Error::msg(format!(
