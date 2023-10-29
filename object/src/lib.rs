@@ -38,7 +38,7 @@ impl std::fmt::Display for Object {
 
                 write!(f, "fn({}) {{\n{}\n}}", parameters_string, body)
             }
-            Object::CompiledFunction(_function) => write!(f, "compiled function"),
+            Object::CompiledFunction(function) => write!(f, "{}", function),
             Object::Array(elements) => {
                 let mut elements_string = String::new();
 
@@ -70,5 +70,11 @@ impl CompiledFunction {
 
     pub fn instructions(&self) -> &Instructions {
         &self.instructions
+    }
+}
+
+impl std::fmt::Display for CompiledFunction {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "function ({})", self.instructions)
     }
 }

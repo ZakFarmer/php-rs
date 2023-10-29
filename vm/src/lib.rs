@@ -1,10 +1,13 @@
-use std::{borrow::Borrow, rc::Rc};
+use std::{
+    borrow::{Borrow, BorrowMut},
+    rc::Rc,
+};
 
 use anyhow::Error;
 use byteorder::{BigEndian, ByteOrder};
 use compiler::Bytecode;
-use object::{Object, CompiledFunction};
-use opcode::{Opcode, Instructions};
+use object::{CompiledFunction, Object};
+use opcode::{Instructions, Opcode};
 
 mod frame;
 
@@ -31,13 +34,13 @@ impl Vm {
     }
 
     pub fn push_frame(&mut self, frame: frame::Frame) {
-        self.frames.push(frame);
+        self.frames[self.frame_index] = frame;
         self.frame_index += 1;
     }
 
     pub fn pop_frame(&mut self) -> frame::Frame {
         self.frame_index -= 1;
-        self.frames.pop().unwrap()
+        self.frames[self.frame_index].clone()
     }
 
     pub fn globals(&self) -> &Vec<Rc<Object>> {
@@ -45,11 +48,11 @@ impl Vm {
     }
 
     pub fn new(bytecode: Bytecode) -> Self {
-        let empty_frame = frame::Frame::new(CompiledFunction::new(Instructions(vec![])));
+        let empty_frame = frame::Frame::new(CompiledFunction::new(Instructions(vec![])), 0);
 
         let main_function = CompiledFunction::new(bytecode.instructions.clone());
-        let main_frame = frame::Frame::new(main_function);
-        
+        let main_frame = frame::Frame::new(main_function, 0);
+
         let mut frames = vec![empty_frame; MAX_FRAMES];
         frames[0] = main_frame;
 
@@ -78,22 +81,21 @@ impl Vm {
         let mut instruction_pointer: usize;
         let mut instructions: Vec<u8>;
 
-        dbg!(self.current_frame());
-
-        while self.current_frame().instruction_pointer < self.current_frame().instructions().0.len() as i32 - 1 {
+        while self.current_frame().instruction_pointer
+            < self.current_frame().instructions().0.len() as i32 - 1
+        {
             self.current_frame().instruction_pointer += 1;
-           
+
             instruction_pointer = self.current_frame().instruction_pointer as usize;
             instructions = self.current_frame().instructions().0.clone();
 
             let op = *instructions.get(instruction_pointer).ok_or_else(|| {
                 Error::msg(format!(
                     "no instruction at index {} in function {:?}",
-                    instruction_pointer, self.current_frame().function
+                    instruction_pointer,
+                    self.current_frame().function
                 ))
             })?;
-
-            dbg!(op);
 
             let opcode = Opcode::from(op);
 
@@ -101,14 +103,16 @@ impl Vm {
 
             match opcode {
                 Opcode::OpJump => {
-                    let jump_position =
-                        BigEndian::read_u16(&instructions[instruction_pointer + 1..instruction_pointer + 3]) as usize;
+                    let jump_position = BigEndian::read_u16(
+                        &instructions[instruction_pointer + 1..instruction_pointer + 3],
+                    ) as usize;
 
                     self.current_frame().instruction_pointer = jump_position as i32 - 1;
                 }
                 Opcode::OpJumpNotTruthy => {
-                    let jump_position =
-                        BigEndian::read_u16(&instructions[instruction_pointer + 1..instruction_pointer + 3]) as usize;
+                    let jump_position = BigEndian::read_u16(
+                        &instructions[instruction_pointer + 1..instruction_pointer + 3],
+                    ) as usize;
 
                     self.current_frame().instruction_pointer += 2;
 
@@ -118,28 +122,65 @@ impl Vm {
                         self.current_frame().instruction_pointer = jump_position as i32 - 1;
                     }
                 }
+                Opcode::OpPop => {
+                    self.pop();
+                }
                 Opcode::OpGetGlobal => {
-                    let global_index =
-                        BigEndian::read_u16(&instructions[instruction_pointer + 1..instruction_pointer + 3]) as usize;
+                    let global_index = BigEndian::read_u16(
+                        &instructions[instruction_pointer + 1..instruction_pointer + 3],
+                    ) as usize;
 
                     self.current_frame().instruction_pointer += 2;
 
                     self.push(Rc::clone(&self.globals[global_index]));
                 }
                 Opcode::OpSetGlobal => {
-                    let global_index =
-                        BigEndian::read_u16(&instructions[instruction_pointer + 1..instruction_pointer + 3]) as usize;
+                    let global_index = BigEndian::read_u16(
+                        &instructions[instruction_pointer + 1..instruction_pointer + 3],
+                    ) as usize;
 
                     self.current_frame().instruction_pointer += 2;
 
                     self.globals[global_index] = self.pop();
                 }
+                Opcode::OpCall => {
+                    self.current_frame().instruction_pointer += 1;
+
+                    let function = &*self.stack[self.stack_pointer - 1];
+
+                    if let Object::CompiledFunction(function) = function {
+                        let frame =
+                            frame::Frame::new(function.as_ref().clone(), self.stack_pointer);
+
+                        self.stack_pointer = frame.base_pointer;
+                        self.push_frame(frame);
+                    } else {
+                        return Err(Error::msg(format!("calling non-function: {}", function)));
+                    }
+                }
+                Opcode::OpReturn => {
+                    let frame = self.pop_frame();
+
+                    self.stack_pointer = frame.base_pointer - 1;
+
+                    self.push(Rc::new(Object::Null));
+                }
+                Opcode::OpReturnValue => {
+                    let return_value = self.pop();
+
+                    let frame = self.pop_frame();
+
+                    self.stack_pointer = frame.base_pointer - 1;
+
+                    self.push(return_value);
+                }
                 Opcode::OpNull => {
                     self.push(Rc::new(Object::Null));
                 }
                 Opcode::OpConst => {
-                    let const_index =
-                        BigEndian::read_u16(&instructions[instruction_pointer + 1..instruction_pointer + 3]) as usize;
+                    let const_index = BigEndian::read_u16(
+                        &instructions[instruction_pointer + 1..instruction_pointer + 3],
+                    ) as usize;
 
                     self.current_frame().instruction_pointer += 2;
 
@@ -151,7 +192,9 @@ impl Vm {
 
                     let result = match (&*left, &*right) {
                         (Object::Integer(l), Object::Integer(r)) => Object::Integer(l + r),
-                        (Object::String(l), Object::String(r)) => Object::String(format!("{}{}", l, r)),
+                        (Object::String(l), Object::String(r)) => {
+                            Object::String(format!("{}{}", l, r))
+                        }
                         _ => {
                             return Err(Error::msg(format!(
                                 "unsupported types for addition: {} + {}",
@@ -212,9 +255,6 @@ impl Vm {
 
                     self.stack_pointer -= 1;
                     self.stack[self.stack_pointer - 1] = Rc::new(result);
-                }
-                Opcode::OpPop => {
-                    self.pop();
                 }
                 Opcode::OpTrue => {
                     self.push(Rc::new(Object::Boolean(true)));
@@ -308,8 +348,9 @@ impl Vm {
                     self.push(Rc::new(result));
                 }
                 Opcode::OpArray => {
-                    let num_elements =
-                        BigEndian::read_u16(&&instructions[instruction_pointer + 1..instruction_pointer + 3]) as usize;
+                    let num_elements = BigEndian::read_u16(
+                        &instructions[instruction_pointer + 1..instruction_pointer + 3],
+                    ) as usize;
 
                     self.current_frame().instruction_pointer += 2;
 
@@ -369,13 +410,9 @@ impl Vm {
         Rc::clone(&self.stack[self.stack_pointer])
     }
 
-    pub fn push(&mut self, obj: Rc<Object>) {
-        self.stack[self.stack_pointer] = obj;
+    pub fn push(&mut self, object: Rc<Object>) {
+        self.stack[self.stack_pointer] = object;
         self.stack_pointer += 1;
-    }
-
-    pub fn stack_top(&self) -> Rc<Object> {
-        Rc::clone(&self.stack[self.stack_pointer - 1])
     }
 }
 

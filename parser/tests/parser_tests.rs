@@ -1,4 +1,7 @@
-use lexer::Lexer;
+use lexer::{
+    token::{Token, TokenType},
+    Lexer,
+};
 use parser::{
     ast::{BlockStatement, Expression, Literal},
     *,
@@ -102,9 +105,25 @@ fn test_call_expression() -> Result<(), Error> {
 
             assert_literal_expression(&call_expression.arguments[0], "1")?;
 
-            assert_infix_expression(&call_expression.arguments[1], "2", "*", "3")?;
+            assert_infix_expression(
+                &call_expression.arguments[1],
+                "2",
+                &Token {
+                    literal: "*".to_string(),
+                    token_type: TokenType::Asterisk,
+                },
+                "3",
+            )?;
 
-            assert_infix_expression(&call_expression.arguments[2], "4", "+", "5")?;
+            assert_infix_expression(
+                &call_expression.arguments[2],
+                "4",
+                &Token {
+                    literal: "+".to_string(),
+                    token_type: TokenType::Plus,
+                },
+                "5",
+            )?;
         } else {
             assert!(false, "Expected CallExpression");
         }
@@ -132,7 +151,15 @@ fn test_if_expression() -> Result<(), Error> {
 
     if let Statement::Expr(expression) = &program.statements[0] {
         if let Expression::If(if_expression) = &expression {
-            assert_infix_expression(&if_expression.condition, "$x", "<", "$y")?;
+            assert_infix_expression(
+                &if_expression.condition,
+                "$x",
+                &Token {
+                    literal: "<".to_string(),
+                    token_type: TokenType::Lt,
+                },
+                "$y",
+            )?;
 
             assert_eq!(1, if_expression.consequence.statements.len());
 
@@ -168,7 +195,15 @@ fn test_if_else_expression() -> Result<(), Error> {
 
     if let Statement::Expr(expression) = &program.statements[0] {
         if let Expression::If(if_expression) = &expression {
-            assert_infix_expression(&if_expression.condition, "$x", "<", "$y")?;
+            assert_infix_expression(
+                &if_expression.condition,
+                "$x",
+                &Token {
+                    literal: "<".to_string(),
+                    token_type: TokenType::Lt,
+                },
+                "$y",
+            )?;
 
             assert_eq!(1, if_expression.consequence.statements.len());
 
@@ -217,7 +252,15 @@ fn test_index_expressions() -> Result<(), Error> {
         if let Expression::Index(index_expression) = &expression {
             assert_identifier(&index_expression.left, "$myArray")?;
 
-            assert_infix_expression(&index_expression.index, "1", "+", "1")?;
+            assert_infix_expression(
+                &index_expression.index,
+                "1",
+                &Token {
+                    literal: "+".to_string(),
+                    token_type: TokenType::Plus,
+                },
+                "1",
+            )?;
         } else {
             assert!(false, "Expected IndexExpression");
         }
@@ -310,8 +353,24 @@ fn test_array_literal_expression() -> Result<(), Error> {
             assert_eq!(3, elements.len());
 
             assert_integer_literal(&elements[0], 1)?;
-            assert_infix_expression(&elements[1], "2", "*", "2")?;
-            assert_infix_expression(&elements[2], "3", "+", "3")?;
+            assert_infix_expression(
+                &elements[1],
+                "2",
+                &Token {
+                    literal: "*".to_string(),
+                    token_type: TokenType::Asterisk,
+                },
+                "2",
+            )?;
+            assert_infix_expression(
+                &elements[2],
+                "3",
+                &Token {
+                    literal: "+".to_string(),
+                    token_type: TokenType::Plus,
+                },
+                "3",
+            )?;
         } else {
             assert!(false, "Expected ArrayLiteral");
         }
@@ -375,7 +434,24 @@ fn test_operator_precedence_parsing() -> Result<(), Error> {
 
 #[test]
 fn test_prefix_expressions() -> Result<(), Error> {
-    let prefix_tests: [(&str, &str, i64); 2] = [("!5;", "!", 5), ("-15;", "-", 15)];
+    let prefix_tests: [(&str, &Token, i64); 2] = [
+        (
+            "!5;",
+            &Token {
+                literal: "!".to_string(),
+                token_type: TokenType::Bang,
+            },
+            5,
+        ),
+        (
+            "-15;",
+            &Token {
+                literal: "-".to_string(),
+                token_type: TokenType::Minus,
+            },
+            15,
+        ),
+    ];
 
     for (input, _operator, value) in prefix_tests.iter() {
         let lexer = Lexer::new(input);
@@ -481,10 +557,26 @@ fn assert_function_literal(expression: &Expression) -> Result<(), Error> {
 
             match &statements[0] {
                 Statement::Return(return_statement) => {
-                    assert_infix_expression(&return_statement.return_value, "$x", "+", "$y")?;
+                    assert_infix_expression(
+                        &return_statement.return_value,
+                        "$x",
+                        &Token {
+                            literal: "+".to_string(),
+                            token_type: TokenType::Plus,
+                        },
+                        "$y",
+                    )?;
                 }
                 Statement::Expr(expression) => {
-                    assert_infix_expression(expression, "$x", "+", "$y")?;
+                    assert_infix_expression(
+                        expression,
+                        "$x",
+                        &Token {
+                            literal: "+".to_string(),
+                            token_type: TokenType::Plus,
+                        },
+                        "$y",
+                    )?;
                 }
                 _ => assert!(false, "Expected ReturnStatement or ExpressionStatement"),
             }
@@ -504,9 +596,25 @@ fn assert_call_expression(expression: &Expression) -> Result<(), Error> {
 
         assert_literal_expression(&call_expression.arguments[0], "1")?;
 
-        assert_infix_expression(&call_expression.arguments[1], "2", "*", "3")?;
+        assert_infix_expression(
+            &call_expression.arguments[1],
+            "2",
+            &Token {
+                token_type: TokenType::Asterisk,
+                literal: "*".to_string(),
+            },
+            "3",
+        )?;
 
-        assert_infix_expression(&call_expression.arguments[2], "4", "+", "5")?;
+        assert_infix_expression(
+            &call_expression.arguments[2],
+            "4",
+            &Token {
+                token_type: TokenType::Plus,
+                literal: "+".to_string(),
+            },
+            "5",
+        )?;
     } else {
         assert!(false, "Expected CallExpression");
     }
@@ -517,13 +625,13 @@ fn assert_call_expression(expression: &Expression) -> Result<(), Error> {
 fn assert_infix_expression(
     expression: &Expression,
     left_value: &str,
-    operator: &str,
+    operator: &Token,
     right_value: &str,
 ) -> Result<(), Error> {
     match expression {
         Expression::Infix(infix_expression) => {
             assert_literal_expression(&infix_expression.left, left_value)?;
-            assert_eq!(operator, infix_expression.operator);
+            assert_eq!(*operator, infix_expression.operator);
             assert_literal_expression(&infix_expression.right, right_value)?;
         }
         _ => {
@@ -536,12 +644,12 @@ fn assert_infix_expression(
 
 fn assert_prefix_expression(
     expression: &Expression,
-    operator: &str,
+    operator: &Token,
     right_value: i64,
 ) -> Result<(), Error> {
     match expression {
         Expression::Prefix(prefix_expression) => {
-            assert_eq!(operator, prefix_expression.operator);
+            assert_eq!(*operator, prefix_expression.operator);
             assert_integer_literal(&prefix_expression.right, right_value)?;
         }
         _ => {
