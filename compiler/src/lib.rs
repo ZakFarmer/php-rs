@@ -300,6 +300,10 @@ impl Compiler {
             }
             Expression::Function(function_literal) => {
                 self.enter_scope();
+                
+                for parameter in function_literal.parameters.iter() {
+                    self.symbol_table.define(&parameter.value);
+                }
 
                 self.compile_block_statement(&function_literal.body)?;
 
@@ -311,9 +315,10 @@ impl Compiler {
                     self.emit(Opcode::OpReturn, vec![]);
                 }
 
+                let num_locals = self.symbol_table.num_definitions;
                 let instructions = self.exit_scope();
 
-                let compiled_function = Rc::from(object::CompiledFunction::new(instructions));
+                let compiled_function = Rc::from(object::CompiledFunction::new(instructions, num_locals));
 
                 let operands =
                     vec![self.add_constant(object::Object::CompiledFunction(compiled_function))];
@@ -324,6 +329,10 @@ impl Compiler {
             }
             Expression::Call(call_expression) => {
                 self.compile_expression(&call_expression.function)?;
+
+                for argument in call_expression.arguments.iter() {
+                    self.compile_expression(argument)?;
+                }
 
                 self.emit(Opcode::OpCall, vec![call_expression.arguments.len()]);
 
