@@ -210,6 +210,28 @@ fn test_conditionals() -> Result<(), Error> {
 }
 
 #[test]
+fn test_builtin_functions() -> Result<(), Error> {
+    let tests = vec![
+        VmTestCase {
+            input: "len(\"\")".to_string(),
+            expected: Object::Integer(0),
+        },
+        VmTestCase {
+            input: "len(\"four\")".to_string(),
+            expected: Object::Integer(4),
+        },
+        VmTestCase {
+            input: "len([1, 2, 3, 4, 5])".to_string(),
+            expected: Object::Integer(5),
+        },
+    ];
+
+    run_vm_tests(tests)?;
+
+    Ok(())
+}
+
+#[test]
 fn test_functions_with_no_arguments() -> Result<(), Error> {
     let tests = vec![
         VmTestCase {

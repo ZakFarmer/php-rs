@@ -7,7 +7,7 @@ use parser::ast::{
     BlockStatement, BooleanLiteral, Expression, IntegerLiteral, Literal, Node, Statement,
     StringLiteral,
 };
-use symbol_table::{SymbolScope, SymbolTable};
+use symbol_table::{SymbolScope, SymbolTable, Symbol};
 
 pub mod symbol_table;
 
@@ -60,21 +60,29 @@ impl Compiler {
             },
         };
 
+        let mut symbol_table = SymbolTable::new();
+
+        for (i, builtin) in object::builtins::BUILTINS.iter().enumerate() {
+            symbol_table.define_builtin(i, builtin.0.to_string());
+        }
+
         Self {
             constants: Vec::new(),
-            symbol_table: SymbolTable::new(),
+            symbol_table,
             scopes: vec![main_scope],
             scope_index: 0,
         }
     }
 
-    pub fn new_with_state(constants: Vec<Rc<object::Object>>, symbol_table: SymbolTable) -> Self {
-        let compiler = Self::new();
-
+    pub fn new_with_state(constants: Vec<Rc<object::Object>>, mut symbol_table: SymbolTable) -> Self {
+        for (i, builtin) in object::builtins::BUILTINS.iter().enumerate() {
+            symbol_table.define_builtin(i, builtin.0.to_string());
+        }
+    
         Self {
             constants,
             symbol_table,
-            ..compiler
+            ..Self::new()
         }
     }
 
@@ -107,6 +115,27 @@ impl Compiler {
         self.symbol_table = outer;
 
         instructions
+    }
+
+    fn load_symbol(&mut self, symbol: &Symbol) {
+        match symbol.scope {
+            SymbolScope::Global => {
+                self.emit(Opcode::OpGetGlobal, vec![symbol.index]);
+            }
+            SymbolScope::Local => {
+                self.emit(Opcode::OpGetLocal, vec![symbol.index]);
+            }
+            SymbolScope::Builtin => {
+                self.emit(Opcode::OpGetBuiltin, vec![symbol.index]);
+            }
+            SymbolScope::Free => {
+                self.emit(Opcode::OpGetFree, vec![symbol.index]);
+            }
+            SymbolScope::Function => {
+                self.emit(Opcode::OpCurrentClosure, vec![]);
+            }
+            _ => {}
+        }
     }
 
     pub fn scopes(&self) -> &Vec<CompilationScope> {
@@ -275,18 +304,11 @@ impl Compiler {
     fn compile_expression(&mut self, e: &Expression) -> Result<(), Error> {
         match e {
             Expression::Identifier(identifier) => {
-                let symbol = self.symbol_table.resolve(&identifier.value);
+                let symbol = self.symbol_table.resolve(identifier.value.clone());
 
                 match symbol {
                     Some(symbol) => {
-                        self.emit(
-                            if symbol.scope == SymbolScope::Global {
-                                Opcode::OpGetGlobal
-                            } else {
-                                Opcode::OpGetLocal
-                            },
-                            vec![symbol.index],
-                        );
+                        self.load_symbol(&symbol);
                     }
                     None => {
                         return Err(Error::msg(format!(
@@ -300,7 +322,7 @@ impl Compiler {
             }
             Expression::Function(function_literal) => {
                 self.enter_scope();
-                
+
                 for parameter in function_literal.parameters.iter() {
                     self.symbol_table.define(&parameter.value);
                 }

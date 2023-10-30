@@ -48,6 +48,15 @@ impl Vm {
         let function = &*self.stack[self.stack_pointer - 1 - num_args];
 
         match function {
+            Object::Builtin(builtin) => {
+                let args = self.stack[self.stack_pointer - num_args..self.stack_pointer].to_vec();
+
+                let result = builtin(args);
+
+                self.stack_pointer -= num_args + 1;
+
+                self.push(result);
+            }
             Object::CompiledFunction(compiled_function) => {
                 let base_pointer = self.stack_pointer - num_args;
                 let cloned_function = compiled_function.as_ref().clone();
@@ -182,10 +191,23 @@ impl Vm {
 
                     self.stack[base_pointer + local_index] = self.pop();
                 }
+                Opcode::OpGetBuiltin => {
+                    let builtin_index = instructions[instruction_pointer + 1] as usize;
+
+                    self.current_frame().instruction_pointer += 1;
+
+                    let builtin_definition = object::builtins::BUILTINS.get(builtin_index)
+                        .unwrap()
+                        .1;
+
+                    self.push(Rc::new(Object::Builtin(builtin_definition)));
+                }
                 Opcode::OpCall => {
                     let num_args = instructions[instruction_pointer + 1] as usize;
 
                     self.current_frame().instruction_pointer += 1;
+
+                    println!("Calling function");
 
                     self.call_function(num_args);
                 }

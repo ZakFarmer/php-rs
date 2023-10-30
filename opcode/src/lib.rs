@@ -178,6 +178,8 @@ pub enum Opcode {
     OpGetFree,
     /// 0x1C -  Current closure
     OpCurrentClosure,
+    /// 0x1D - Get a builtin function
+    OpGetBuiltin,
 }
 
 impl From<u8> for Opcode {
@@ -212,6 +214,7 @@ impl From<u8> for Opcode {
             0x1A => Opcode::OpClosure,
             0x1B => Opcode::OpGetFree,
             0x1C => Opcode::OpCurrentClosure,
+            0x1D => Opcode::OpGetBuiltin,
             _ => panic!("Opcode not found: {}", opcode),
         }
     }
@@ -454,6 +457,13 @@ lazy_static! {
             OpcodeDefinition {
                 name: "OpCurrentClosure",
                 operand_widths: vec![],
+            },
+        );
+        definitions.insert(
+            Opcode::OpGetBuiltin,
+            OpcodeDefinition {
+                name: "OpGetBuiltin",
+                operand_widths: vec![1],
             },
         );
 

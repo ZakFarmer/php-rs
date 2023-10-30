@@ -9,7 +9,7 @@ use parser::ast::{
 
 use object::{
     environment::{Env, Environment},
-    Object,
+    Object, builtins,
 };
 
 pub fn eval(node: Node, env: &Env) -> Result<Rc<Object>> {
@@ -47,6 +47,9 @@ fn apply_function(function: &Rc<Object>, args: &Vec<Rc<Object>>) -> Result<Rc<Ob
 
             let evaluated = eval_statements(&body.statements, &Rc::new(RefCell::new(env)))?;
             return unwrap_return_value(evaluated);
+        }
+        Object::Builtin(builtin) => {
+            Ok(builtin(args.to_vec()))
         }
         f => Err(Error::msg(format!("expected {} to be a function", f))),
     }
@@ -299,7 +302,10 @@ fn eval_statement(statement: &Statement, env: &Env) -> Result<Rc<Object>> {
 fn eval_identifier(identifier: String, env: &Env) -> Result<Rc<Object>> {
     match env.borrow().get(&identifier) {
         Some(value) => Ok(value),
-        None => Err(Error::msg(format!("Identifier not found: {}", identifier))),
+        None => match object::builtins::get_builtin_by_name(&identifier) {
+            Some(builtin) => Ok(Rc::new(Object::Builtin(builtin))),
+            None => Err(Error::msg(format!("Unknown identifier: {}", identifier))),
+        },
     }
 }
 

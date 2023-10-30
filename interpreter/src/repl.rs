@@ -37,12 +37,14 @@ pub fn init_repl() -> Result<(), Error> {
                 let mut parser = Parser::new(lexer);
 
                 let program = parser.parse_program()?;
+                
                 parser.check_errors()?;
 
-                let mut compiler = Compiler::new_with_state(constants, symbol_table);
+                let mut compiler = Compiler::new_with_state(constants, symbol_table.clone());
 
                 match compiler.compile(&Node::Program(program)) {
                     Ok(bytecode) => {
+
                         let mut vm = Vm::new_with_globals_store(bytecode, globals);
 
                         match vm.run() {

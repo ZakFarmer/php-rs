@@ -149,6 +149,35 @@ fn test_boolean_expressions() -> Result<(), Error> {
 }
 
 #[test]
+fn test_builtin_functions() -> Result<(), Error> {
+    let tests = vec![
+        CompilerTestCase {
+            input: "$x = [1, 2, 3]; len($x);".to_string(),
+            expected_constants: vec![
+                Object::Integer(1),
+                Object::Integer(2),
+                Object::Integer(3),
+            ],
+            expected_instructions: vec![
+                opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                opcode::make(opcode::Opcode::OpConst, &vec![1]),
+                opcode::make(opcode::Opcode::OpConst, &vec![2]),
+                opcode::make(opcode::Opcode::OpArray, &vec![3]),
+                opcode::make(opcode::Opcode::OpSetGlobal, &vec![0]),
+                opcode::make(opcode::Opcode::OpGetBuiltin, &vec![0]),
+                opcode::make(opcode::Opcode::OpGetGlobal, &vec![0]),
+                opcode::make(opcode::Opcode::OpCall, &vec![1]),
+                opcode::make(opcode::Opcode::OpPop, &vec![]),
+            ],
+        },
+    ];
+
+    run_compiler_tests(tests)?;
+
+    Ok(())
+}
+
+#[test]
 fn test_compilation_scopes() -> Result<(), Error> {
     let mut compiler = Compiler::new();
 

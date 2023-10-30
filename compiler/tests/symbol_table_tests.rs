@@ -128,7 +128,7 @@ fn test_resolve_global() -> Result<(), Error> {
     ];
 
     for (name, expected_symbol) in expected {
-        let symbol = global.resolve(&name);
+        let symbol = global.resolve(name.clone());
 
         if symbol.is_none() {
             panic!("symbol for {} is None", name);

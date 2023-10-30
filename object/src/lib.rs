@@ -5,7 +5,10 @@ use parser::ast::{BlockStatement, Identifier};
 
 use self::environment::Env;
 
+pub mod builtins;
 pub mod environment;
+
+pub type BuiltinFunction = fn(Vec<Rc<Object>>) -> Rc<Object>;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Object {
@@ -13,6 +16,7 @@ pub enum Object {
     Boolean(bool),
     String(String),
     Function(Vec<Identifier>, BlockStatement, Env),
+    Builtin(BuiltinFunction),
     CompiledFunction(Rc<CompiledFunction>),
     Return(Rc<Object>),
     Array(Vec<Rc<Object>>),

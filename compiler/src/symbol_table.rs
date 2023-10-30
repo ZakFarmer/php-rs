@@ -57,8 +57,20 @@ impl SymbolTable {
         symbol
     }
 
-    pub fn resolve(&self, name: &str) -> Option<Rc<Symbol>> {
-        let symbol = self.store.get(name);
+    pub fn define_builtin(&mut self, index: usize, name: String) -> Rc<Symbol> {
+        let symbol = Rc::new(Symbol {
+            name: name.clone(),
+            scope: SymbolScope::Builtin,
+            index,
+        });
+
+        self.store.insert(name.to_string(), Rc::clone(&symbol));
+
+        symbol
+    }
+
+    pub fn resolve(&self, name: String) -> Option<Rc<Symbol>> {
+        let symbol = self.store.get(&name);
 
         if symbol.is_none() && self.outer.is_some() {
             return self.outer.as_ref().unwrap().resolve(name);
