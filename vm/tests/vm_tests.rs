@@ -14,7 +14,7 @@ struct VmTestCase {
 
 fn run_vm_tests(tests: Vec<VmTestCase>) -> Result<(), Error> {
     for test in tests {
-        let mut parser = Parser::new(Lexer::new(&test.input));
+        let mut parser = Parser::new(&test.input);
 
         let program = parser.parse_program()?;
 

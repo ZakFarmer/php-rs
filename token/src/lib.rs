@@ -38,10 +38,10 @@ pub enum TokenType {
     Return,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Token {
     pub token_type: TokenType,
-    pub literal: String,
+    pub value: String,
 }
 
 impl TokenType {
@@ -58,9 +58,9 @@ impl TokenType {
     }
 }
 
-impl std::fmt::Display for Token {
+impl std::fmt::Display for Token  {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.literal)
+        write!(f, "{}", &self.value)
     }
 }
 

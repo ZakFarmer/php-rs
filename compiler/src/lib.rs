@@ -1,13 +1,12 @@
 use std::rc::Rc;
 
 use anyhow::Error;
-use lexer::token::{Token, TokenType};
 use opcode::{Instructions, Opcode};
 use parser::ast::{
-    BlockStatement, BooleanLiteral, Expression, IntegerLiteral, Literal, Node, Statement,
-    StringLiteral,
+    BlockStatement, Expression, Literal, Node, Statement,
 };
-use symbol_table::{SymbolScope, SymbolTable, Symbol};
+use symbol_table::{Symbol, SymbolScope, SymbolTable};
+use token::{Token, TokenType};
 
 pub mod symbol_table;
 
@@ -74,11 +73,14 @@ impl Compiler {
         }
     }
 
-    pub fn new_with_state(constants: Vec<Rc<object::Object>>, mut symbol_table: SymbolTable) -> Self {
+    pub fn new_with_state(
+        constants: Vec<Rc<object::Object>>,
+        mut symbol_table: SymbolTable,
+    ) -> Self {
         for (i, builtin) in object::builtins::BUILTINS.iter().enumerate() {
             symbol_table.define_builtin(i, builtin.0.to_string());
         }
-    
+
         Self {
             constants,
             symbol_table,
@@ -251,7 +253,7 @@ impl Compiler {
             Statement::Assign(assignment) => {
                 self.compile_expression(&assignment.value)?;
 
-                let symbol = self.symbol_table.define(&assignment.name.value);
+                let symbol = self.symbol_table.define(&assignment.token.value);
 
                 self.emit(
                     if symbol.scope == SymbolScope::Global {
@@ -304,7 +306,9 @@ impl Compiler {
     fn compile_expression(&mut self, e: &Expression) -> Result<(), Error> {
         match e {
             Expression::Identifier(identifier) => {
-                let symbol = self.symbol_table.resolve(identifier.value.clone());
+                let symbol = self.symbol_table.resolve(identifier.token.value.clone());
+
+                dbg!(&self.symbol_table.store);
 
                 match symbol {
                     Some(symbol) => {
@@ -313,7 +317,7 @@ impl Compiler {
                     None => {
                         return Err(Error::msg(format!(
                             "undefined variable: {}",
-                            identifier.value
+                            identifier.token.value
                         )));
                     }
                 }
@@ -324,7 +328,7 @@ impl Compiler {
                 self.enter_scope();
 
                 for parameter in function_literal.parameters.iter() {
-                    self.symbol_table.define(&parameter.value);
+                    self.symbol_table.define(&parameter.token.value);
                 }
 
                 self.compile_block_statement(&function_literal.body)?;
@@ -340,7 +344,8 @@ impl Compiler {
                 let num_locals = self.symbol_table.num_definitions;
                 let instructions = self.exit_scope();
 
-                let compiled_function = Rc::from(object::CompiledFunction::new(instructions, num_locals));
+                let compiled_function =
+                    Rc::from(object::CompiledFunction::new(instructions, num_locals));
 
                 let operands =
                     vec![self.add_constant(object::Object::CompiledFunction(compiled_function))];
@@ -450,19 +455,16 @@ impl Compiler {
 
                     Ok(())
                 }
-                Literal::Boolean(boolean) => match boolean {
-                    BooleanLiteral { value: true, .. } => {
-                        self.emit(opcode::Opcode::OpTrue, vec![]);
+                Literal::Boolean(boolean) => if *boolean {
+                    self.emit(opcode::Opcode::OpTrue, vec![]);
 
-                        Ok(())
-                    }
-                    BooleanLiteral { value: false, .. } => {
-                        self.emit(opcode::Opcode::OpFalse, vec![]);
+                    Ok(())
+                } else {
+                    self.emit(opcode::Opcode::OpFalse, vec![]);
 
-                        Ok(())
-                    }
-                },
-                Literal::Integer(IntegerLiteral { value, .. }) => {
+                    Ok(())
+                }
+                Literal::Integer(value) => {
                     let integer = object::Object::Integer(*value);
 
                     let constant = self.add_constant(integer);
@@ -471,7 +473,7 @@ impl Compiler {
 
                     Ok(())
                 }
-                Literal::String(StringLiteral { value, .. }) => {
+                Literal::String(value) => {
                     let string = object::Object::String(value.clone());
 
                     let constant = self.add_constant(string);

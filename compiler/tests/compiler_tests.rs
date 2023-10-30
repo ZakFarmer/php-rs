@@ -150,27 +150,21 @@ fn test_boolean_expressions() -> Result<(), Error> {
 
 #[test]
 fn test_builtin_functions() -> Result<(), Error> {
-    let tests = vec![
-        CompilerTestCase {
-            input: "$x = [1, 2, 3]; len($x);".to_string(),
-            expected_constants: vec![
-                Object::Integer(1),
-                Object::Integer(2),
-                Object::Integer(3),
-            ],
-            expected_instructions: vec![
-                opcode::make(opcode::Opcode::OpConst, &vec![0]),
-                opcode::make(opcode::Opcode::OpConst, &vec![1]),
-                opcode::make(opcode::Opcode::OpConst, &vec![2]),
-                opcode::make(opcode::Opcode::OpArray, &vec![3]),
-                opcode::make(opcode::Opcode::OpSetGlobal, &vec![0]),
-                opcode::make(opcode::Opcode::OpGetBuiltin, &vec![0]),
-                opcode::make(opcode::Opcode::OpGetGlobal, &vec![0]),
-                opcode::make(opcode::Opcode::OpCall, &vec![1]),
-                opcode::make(opcode::Opcode::OpPop, &vec![]),
-            ],
-        },
-    ];
+    let tests = vec![CompilerTestCase {
+        input: "$x = [1, 2, 3]; len($x);".to_string(),
+        expected_constants: vec![Object::Integer(1), Object::Integer(2), Object::Integer(3)],
+        expected_instructions: vec![
+            opcode::make(opcode::Opcode::OpConst, &vec![0]),
+            opcode::make(opcode::Opcode::OpConst, &vec![1]),
+            opcode::make(opcode::Opcode::OpConst, &vec![2]),
+            opcode::make(opcode::Opcode::OpArray, &vec![3]),
+            opcode::make(opcode::Opcode::OpSetGlobal, &vec![0]),
+            opcode::make(opcode::Opcode::OpGetBuiltin, &vec![0]),
+            opcode::make(opcode::Opcode::OpGetGlobal, &vec![0]),
+            opcode::make(opcode::Opcode::OpCall, &vec![1]),
+            opcode::make(opcode::Opcode::OpPop, &vec![]),
+        ],
+    }];
 
     run_compiler_tests(tests)?;
 
@@ -281,21 +275,15 @@ fn test_functions() -> Result<(), Error> {
         expected_constants: vec![
             Object::Integer(5),
             Object::Integer(10),
-            Object::CompiledFunction(
-                Rc::new(
-                    object::CompiledFunction::new(
-                        concat_instructions(
-                            &vec![
-                                opcode::make(opcode::Opcode::OpConst, &vec![0]),
-                                opcode::make(opcode::Opcode::OpConst, &vec![1]),
-                                opcode::make(opcode::Opcode::OpAdd, &vec![]),
-                                opcode::make(opcode::Opcode::OpReturnValue, &vec![]),
-                            ],
-                        ),
-                        0
-                    )
-                )
-            ),
+            Object::CompiledFunction(Rc::new(object::CompiledFunction::new(
+                concat_instructions(&vec![
+                    opcode::make(opcode::Opcode::OpConst, &vec![0]),
+                    opcode::make(opcode::Opcode::OpConst, &vec![1]),
+                    opcode::make(opcode::Opcode::OpAdd, &vec![]),
+                    opcode::make(opcode::Opcode::OpReturnValue, &vec![]),
+                ]),
+                0,
+            ))),
         ],
         expected_instructions: vec![
             opcode::make(opcode::Opcode::OpConst, &vec![2]),
@@ -313,10 +301,10 @@ fn test_functions_with_no_return_value() -> Result<(), Error> {
     let tests = vec![CompilerTestCase {
         input: "function() { }".to_string(),
         expected_constants: vec![Object::CompiledFunction(Rc::new(
-            object::CompiledFunction::new(concat_instructions(&vec![opcode::make(
-                opcode::Opcode::OpReturn,
-                &vec![],
-            )]), 0),
+            object::CompiledFunction::new(
+                concat_instructions(&vec![opcode::make(opcode::Opcode::OpReturn, &vec![])]),
+                0,
+            ),
         ))],
         expected_instructions: vec![
             opcode::make(opcode::Opcode::OpConst, &vec![0]),
@@ -336,12 +324,13 @@ fn test_function_calls() -> Result<(), Error> {
             input: "$noArg = function () { return 24; }; $noArg();".to_string(),
             expected_constants: vec![
                 Object::Integer(24),
-                Object::CompiledFunction(Rc::new(object::CompiledFunction::new(concat_instructions(
-                    &vec![
+                Object::CompiledFunction(Rc::new(object::CompiledFunction::new(
+                    concat_instructions(&vec![
                         opcode::make(opcode::Opcode::OpConst, &vec![0]),
                         opcode::make(opcode::Opcode::OpReturnValue, &vec![]),
-                    ],
-                ), 0))),
+                    ]),
+                    0,
+                ))),
             ],
             expected_instructions: vec![
                 opcode::make(opcode::Opcode::OpConst, &vec![1]),
@@ -354,12 +343,13 @@ fn test_function_calls() -> Result<(), Error> {
         CompilerTestCase {
             input: "$oneArg = function ($a) { return $a; }; $oneArg(24);".to_string(),
             expected_constants: vec![
-                Object::CompiledFunction(Rc::new(object::CompiledFunction::new(concat_instructions(
-                    &vec![
+                Object::CompiledFunction(Rc::new(object::CompiledFunction::new(
+                    concat_instructions(&vec![
                         opcode::make(opcode::Opcode::OpGetLocal, &vec![0]),
                         opcode::make(opcode::Opcode::OpReturnValue, &vec![]),
-                    ],
-                ), 1))),
+                    ]),
+                    1,
+                ))),
                 Object::Integer(24),
             ],
             expected_instructions: vec![
@@ -522,9 +512,11 @@ fn test_string_expressions() -> Result<(), Error> {
 
 fn run_compiler_tests(tests: Vec<CompilerTestCase>) -> Result<(), Error> {
     for test in tests {
-        let mut parser = parser::Parser::new(Lexer::new(&test.input));
-
+        let mut parser = parser::Parser::new(&test.input);
         let program = parser.parse_program()?;
+
+        dbg!(&program);
+
         let mut compiler = Compiler::new();
 
         let bytecode = compiler.compile(&Node::Program(program))?;

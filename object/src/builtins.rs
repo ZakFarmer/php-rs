@@ -5,13 +5,14 @@ use lazy_static::lazy_static;
 use crate::{BuiltinFunction, Object};
 
 lazy_static! {
-    pub static ref BUILTINS: Vec<(&'static str, BuiltinFunction)> = vec![
-        ("len", len),
-    ];
+    pub static ref BUILTINS: Vec<(&'static str, BuiltinFunction)> = vec![("len", len),];
 }
 
 pub fn get_builtin_by_name(name: &str) -> Option<BuiltinFunction> {
-    match BUILTINS.iter().find(|(builtin_name, _)| *builtin_name == name) {
+    match BUILTINS
+        .iter()
+        .find(|(builtin_name, _)| *builtin_name == name)
+    {
         Some((_, builtin)) => Some(*builtin),
         None => None,
     }

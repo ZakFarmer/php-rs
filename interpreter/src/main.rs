@@ -28,8 +28,7 @@ fn main() -> Result<(), Error> {
         // TODO: Split this out into a separate function
         let file = std::fs::read_to_string(file_path)?;
 
-        let lexer = lexer::Lexer::new(&file);
-        let mut parser = parser::Parser::new(lexer);
+        let mut parser = parser::Parser::new(&file);
 
         let program = parser.parse_program()?;
 

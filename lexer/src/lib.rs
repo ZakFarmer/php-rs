@@ -1,7 +1,5 @@
 use token::{Token, TokenType};
 
-pub mod token;
-
 pub struct Lexer<'a> {
     input: &'a str,
     position: usize,
@@ -26,7 +24,7 @@ impl<'a> Lexer<'a> {
     pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
 
-        let (token_type, literal) = match self.ch {
+        let (token_type, value) = match self.ch {
             Some('=') => {
                 if self.peek_char() == '=' {
                     self.read_char();
@@ -38,9 +36,9 @@ impl<'a> Lexer<'a> {
             Some('"') => {
                 self.read_char();
 
-                let literal = self.read_string();
+                let value = self.read_string();
 
-                (TokenType::String, literal)
+                (TokenType::String, value)
             }
             Some(';') => (TokenType::Semicolon, ";".to_string()),
             Some('(') => (TokenType::LParen, "(".to_string()),
@@ -74,7 +72,7 @@ impl<'a> Lexer<'a> {
 
                         return Token {
                             token_type: TokenType::Ident,
-                            literal: var_name,
+                            value: var_name,
                         };
                     } else {
                         (TokenType::Illegal, "$".to_string())
@@ -85,18 +83,18 @@ impl<'a> Lexer<'a> {
             }
             Some(ch) => {
                 if ch.is_alphabetic() {
-                    let literal = self.read_identifier();
+                    let value = self.read_identifier();
 
                     return Token {
-                        token_type: TokenType::lookup_ident(&literal),
-                        literal,
+                        token_type: TokenType::lookup_ident(&value),
+                        value,
                     };
                 } else if ch.is_ascii_digit() {
-                    let literal = self.read_number();
+                    let value = self.read_number();
 
                     return Token {
                         token_type: TokenType::Int,
-                        literal,
+                        value,
                     };
                 } else {
                     (TokenType::Illegal, ch.to_string())
@@ -109,7 +107,7 @@ impl<'a> Lexer<'a> {
 
         Token {
             token_type,
-            literal,
+            value,
         }
     }
 

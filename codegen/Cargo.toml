@@ -1,5 +1,5 @@
 [package]
-name = "interpreter"
+name = "codegen"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,14 +7,8 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.75"
-codegen = { path = "../codegen" }
-compiler = { path = "../compiler" }
 env_logger = "0.10.0"
 inkwell = { version = "0.2.0", features = ["llvm16-0"] }
-lazy_static = "1.4.0"
-lexer = { path = "../lexer" }
 log = "0.4.20"
-object = { path = "../object" }
 parser = { path = "../parser" }
-rustyline = { version = "12.0.0", features = ["with-file-history"] }
-vm = { path = "../vm" }
+token = { path = "../token" }

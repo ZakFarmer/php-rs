@@ -1,4 +1,4 @@
-use lexer::token::Token;
+use token::Token;
 
 pub enum Node {
     Expression(Expression),
@@ -28,35 +28,40 @@ impl std::fmt::Display for Node {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Literal {
-    Integer(IntegerLiteral),
-    Float(FloatLiteral),
-    Boolean(BooleanLiteral),
-    String(StringLiteral),
-    Array(ArrayLiteral),
+    Integer(i64),
+    Float(f64),
+    Boolean(bool),
+    String(String),
+    Array(ArrayLiteral)
 }
 
 impl std::fmt::Display for Literal {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Literal::Integer(IntegerLiteral { token: _, value }) => write!(f, "{}", value),
-            Literal::Boolean(BooleanLiteral { token: _, value }) => write!(f, "{}", value),
-            Literal::String(StringLiteral { token: _, value }) => write!(f, "{}", value),
-            Literal::Float(FloatLiteral { token: _, value }) => write!(f, "{}", value),
-            Literal::Array(ArrayLiteral { token: _, elements }) => {
-                let mut elements_string = String::new();
+            Literal::Integer(value) => write!(f, "{}", value),
+            Literal::Boolean(value) => write!(f, "{}", value),
+            Literal::String(value) => write!(f, "{}", value),
+            Literal::Float(value) => write!(f,  "{}", value),
+            Literal::Array(array) => {
+                let mut array_string = String::new();
 
-                for (index, element) in elements.iter().enumerate() {
-                    elements_string.push_str(&format!("{}", element));
+                for (index, element) in array.elements.iter().enumerate() {
+                    array_string.push_str(&format!("{}", element));
 
-                    if index < elements.len() - 1 {
-                        elements_string.push_str(", ");
+                    if index < array.elements.len() - 1 {
+                        array_string.push_str(", ");
                     }
                 }
 
-                write!(f, "[{}]", elements_string)
+                write!(f, "[{}]", array_string)
             }
         }
     }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ArrayLiteral {
+    pub elements: Vec<Expression>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -188,37 +193,6 @@ impl std::fmt::Display for Program {
     }
 }
 
-// LITERALS
-#[derive(Clone, Debug, PartialEq)]
-pub struct BooleanLiteral {
-    pub token: Token,
-    pub value: bool,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct IntegerLiteral {
-    pub token: Token,
-    pub value: i64,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct FloatLiteral {
-    pub token: Token,
-    pub value: f64,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct StringLiteral {
-    pub token: Token,
-    pub value: String,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct ArrayLiteral {
-    pub token: Token,
-    pub elements: Vec<Expression>,
-}
-
 // EXPRESSIONS
 #[derive(Clone, Debug, PartialEq)]
 pub struct FunctionLiteral {
@@ -237,12 +211,11 @@ pub struct CallExpression {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Identifier {
     pub token: Token,
-    pub value: String,
 }
 
 impl std::fmt::Display for Identifier {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.value)
+        write!(f, "{}", self.token.value)
     }
 }
 

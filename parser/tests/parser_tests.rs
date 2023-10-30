@@ -1,5 +1,4 @@
 use lexer::{
-    token::{Token, TokenType},
     Lexer,
 };
 use parser::{
@@ -10,6 +9,7 @@ use parser::{
 use anyhow::{Error, Result};
 
 use parser::ast::{ArrayLiteral, Statement};
+use token::{Token, TokenType};
 
 #[test]
 fn test_assignment_statements() -> Result<(), Error> {
@@ -19,8 +19,7 @@ fn test_assignment_statements() -> Result<(), Error> {
         $foobar = 812303;
     ";
 
-    let lexer = Lexer::new(input);
-    let mut parser = Parser::new(lexer);
+    let mut parser = Parser::new(input);
 
     let program = parser.parse_program()?;
     parser.check_errors()?;
@@ -50,8 +49,7 @@ fn test_boolean_expression() -> Result<(), Error> {
 
     let expected_values = [true, false, true, false];
 
-    let lexer = Lexer::new(input);
-    let mut parser = Parser::new(lexer);
+    let mut parser = Parser::new(input);
 
     let program = parser.parse_program()?;
     parser.check_errors()?;
@@ -64,14 +62,14 @@ fn test_boolean_expression() -> Result<(), Error> {
         match statement {
             Statement::Expr(expression) => {
                 if let Expression::Literal(Literal::Boolean(boolean)) = &expression {
-                    assert_eq!(expected_values[i], boolean.value);
+                    assert_eq!(expected_values[i], *boolean);
                 } else {
                     assert!(false, "Expected Boolean expression");
                 }
             }
             Statement::Assign(variable_assignment) => {
                 if let Expression::Literal(Literal::Boolean(boolean)) = &variable_assignment.value {
-                    assert_eq!(expected_values[i], boolean.value);
+                    assert_eq!(expected_values[i], *boolean);
                 } else {
                     assert!(false, "Expected Boolean expression");
                 }
@@ -89,8 +87,7 @@ fn test_boolean_expression() -> Result<(), Error> {
 fn test_call_expression() -> Result<(), Error> {
     let input = "add(1, 2 * 3, 4 + 5);";
 
-    let lexer = Lexer::new(input);
-    let mut parser = Parser::new(lexer);
+    let mut parser = Parser::new(input);
 
     let program = parser.parse_program()?;
     parser.check_errors()?;
@@ -109,7 +106,7 @@ fn test_call_expression() -> Result<(), Error> {
                 &call_expression.arguments[1],
                 "2",
                 &Token {
-                    literal: "*".to_string(),
+                    value: "*".to_string(),
                     token_type: TokenType::Asterisk,
                 },
                 "3",
@@ -119,7 +116,7 @@ fn test_call_expression() -> Result<(), Error> {
                 &call_expression.arguments[2],
                 "4",
                 &Token {
-                    literal: "+".to_string(),
+                    value: "+".to_string(),
                     token_type: TokenType::Plus,
                 },
                 "5",
@@ -140,8 +137,7 @@ fn test_if_expression() -> Result<(), Error> {
         if ($x < $y) { return $x; }
     ";
 
-    let lexer = Lexer::new(input);
-    let mut parser = Parser::new(lexer);
+    let mut parser = Parser::new(input);
 
     let program = parser.parse_program()?;
 
@@ -155,7 +151,7 @@ fn test_if_expression() -> Result<(), Error> {
                 &if_expression.condition,
                 "$x",
                 &Token {
-                    literal: "<".to_string(),
+                    value: "<".to_string(),
                     token_type: TokenType::Lt,
                 },
                 "$y",
@@ -184,8 +180,7 @@ fn test_if_else_expression() -> Result<(), Error> {
         if ($x < $y) { return $x; } else { return $y; }
     ";
 
-    let lexer = Lexer::new(input);
-    let mut parser = Parser::new(lexer);
+    let mut parser = Parser::new(input);
 
     let program = parser.parse_program()?;
 
@@ -199,7 +194,7 @@ fn test_if_else_expression() -> Result<(), Error> {
                 &if_expression.condition,
                 "$x",
                 &Token {
-                    literal: "<".to_string(),
+                    value: "<".to_string(),
                     token_type: TokenType::Lt,
                 },
                 "$y",
@@ -239,8 +234,7 @@ fn test_if_else_expression() -> Result<(), Error> {
 fn test_index_expressions() -> Result<(), Error> {
     let input = "$myArray[1 + 1]";
 
-    let lexer = Lexer::new(input);
-    let mut parser = Parser::new(lexer);
+    let mut parser = Parser::new(input);
 
     let program = parser.parse_program()?;
 
@@ -256,7 +250,7 @@ fn test_index_expressions() -> Result<(), Error> {
                 &index_expression.index,
                 "1",
                 &Token {
-                    literal: "+".to_string(),
+                    value: "+".to_string(),
                     token_type: TokenType::Plus,
                 },
                 "1",
@@ -279,8 +273,7 @@ fn test_return_statements() -> Result<(), Error> {
         return 993322;
     ";
 
-    let lexer = Lexer::new(input);
-    let mut parser = Parser::new(lexer);
+    let mut parser = Parser::new(input);
 
     let program = parser.parse_program()?;
     parser.check_errors()?;
@@ -298,8 +291,7 @@ fn test_return_statements() -> Result<(), Error> {
 fn test_function_literal_parsing() -> Result<(), Error> {
     let input = "function ($x, $y) { return $x + $y; }";
 
-    let lexer = Lexer::new(input);
-    let mut parser = Parser::new(lexer);
+    let mut parser = Parser::new(input);
 
     let program = parser.parse_program()?;
     parser.check_errors()?;
@@ -319,8 +311,7 @@ fn test_function_literal_parsing() -> Result<(), Error> {
 fn test_integer_literal_expression() -> Result<(), Error> {
     let input = "5;";
 
-    let lexer = Lexer::new(input);
-    let mut parser = Parser::new(lexer);
+    let mut parser = Parser::new(input);
 
     let program = parser.parse_program()?;
     parser.check_errors()?;
@@ -340,14 +331,13 @@ fn test_integer_literal_expression() -> Result<(), Error> {
 fn test_array_literal_expression() -> Result<(), Error> {
     let input = "[1, 2 * 2, 3 + 3]";
 
-    let lexer = Lexer::new(input);
-    let mut parser = Parser::new(lexer);
+    let mut parser = Parser::new(input);
 
     let program = parser.parse_program()?;
     parser.check_errors()?;
 
     if let Statement::Expr(expression) = &program.statements[0] {
-        if let Expression::Literal(Literal::Array(ArrayLiteral { token: _, elements })) =
+        if let Expression::Literal(Literal::Array(ArrayLiteral { elements })) =
             &expression
         {
             assert_eq!(3, elements.len());
@@ -357,7 +347,7 @@ fn test_array_literal_expression() -> Result<(), Error> {
                 &elements[1],
                 "2",
                 &Token {
-                    literal: "*".to_string(),
+                    value: "*".to_string(),
                     token_type: TokenType::Asterisk,
                 },
                 "2",
@@ -366,7 +356,7 @@ fn test_array_literal_expression() -> Result<(), Error> {
                 &elements[2],
                 "3",
                 &Token {
-                    literal: "+".to_string(),
+                    value: "+".to_string(),
                     token_type: TokenType::Plus,
                 },
                 "3",
@@ -420,8 +410,7 @@ fn test_operator_precedence_parsing() -> Result<(), Error> {
     ];
 
     for (input, expected) in tests.iter() {
-        let lexer = Lexer::new(input);
-        let mut parser = Parser::new(lexer);
+        let mut parser = Parser::new(input);
 
         let program = parser.parse_program()?;
         parser.check_errors()?;
@@ -438,7 +427,7 @@ fn test_prefix_expressions() -> Result<(), Error> {
         (
             "!5;",
             &Token {
-                literal: "!".to_string(),
+                value: "!".to_string(),
                 token_type: TokenType::Bang,
             },
             5,
@@ -446,7 +435,7 @@ fn test_prefix_expressions() -> Result<(), Error> {
         (
             "-15;",
             &Token {
-                literal: "-".to_string(),
+                value: "-".to_string(),
                 token_type: TokenType::Minus,
             },
             15,
@@ -454,8 +443,7 @@ fn test_prefix_expressions() -> Result<(), Error> {
     ];
 
     for (input, _operator, value) in prefix_tests.iter() {
-        let lexer = Lexer::new(input);
-        let mut parser = Parser::new(lexer);
+        let mut parser = Parser::new(input);
 
         let program = parser.parse_program()?;
         parser.check_errors()?;
@@ -476,8 +464,7 @@ fn test_prefix_expressions() -> Result<(), Error> {
 fn test_strings() -> Result<(), Error> {
     let input = r#""hello world";"#;
 
-    let lexer = Lexer::new(input);
-    let mut parser = Parser::new(lexer);
+    let mut parser = Parser::new(input);
 
     let program = parser.parse_program()?;
     parser.check_errors()?;
@@ -496,7 +483,7 @@ fn test_strings() -> Result<(), Error> {
 fn assert_string_literal(expression: &Expression, value: &str) -> Result<(), Error> {
     match expression {
         Expression::Literal(Literal::String(string_literal)) => {
-            assert_eq!(value, string_literal.value);
+            assert_eq!(value, string_literal);
         }
         _ => {
             assert!(false, "Expected StringLiteral");
@@ -509,7 +496,7 @@ fn assert_string_literal(expression: &Expression, value: &str) -> Result<(), Err
 fn assert_let_statement(statement: &Statement, name: &str) -> Result<(), Error> {
     match statement {
         Statement::Assign(variable_assignment) => {
-            assert_eq!(name, variable_assignment.name.value);
+            assert_eq!(name, variable_assignment.token.value);
         }
         _ => {
             assert!(false, "Expected VariableAssignment");
@@ -522,7 +509,7 @@ fn assert_let_statement(statement: &Statement, name: &str) -> Result<(), Error> 
 fn assert_identifier(expression: &Expression, value: &str) -> Result<(), Error> {
     match expression {
         Expression::Identifier(identifier) => {
-            assert_eq!(value, identifier.value);
+            assert_eq!(value, identifier.token.value);
         }
         _ => {
             assert!(false, "Expected Identifier");
@@ -535,7 +522,7 @@ fn assert_identifier(expression: &Expression, value: &str) -> Result<(), Error> 
 fn assert_integer_literal(expression: &Expression, value: i64) -> Result<(), Error> {
     match expression {
         Expression::Literal(Literal::Integer(integer_literal)) => {
-            assert_eq!(value, integer_literal.value);
+            assert_eq!(value, *integer_literal);
         }
         _ => {
             assert!(false, "Expected IntegerLiteral");
@@ -549,8 +536,8 @@ fn assert_function_literal(expression: &Expression) -> Result<(), Error> {
     if let Expression::Function(function_literal) = expression {
         assert_eq!(2, function_literal.parameters.len());
 
-        assert_eq!("$x", function_literal.parameters[0].value);
-        assert_eq!("$y", function_literal.parameters[1].value);
+        assert_eq!("$x", function_literal.parameters[0].token.value);
+        assert_eq!("$y", function_literal.parameters[1].token.value);
 
         if let BlockStatement { statements, .. } = &function_literal.body {
             assert_eq!(1, statements.len());
@@ -561,7 +548,7 @@ fn assert_function_literal(expression: &Expression) -> Result<(), Error> {
                         &return_statement.return_value,
                         "$x",
                         &Token {
-                            literal: "+".to_string(),
+                            value: "+".to_string(),
                             token_type: TokenType::Plus,
                         },
                         "$y",
@@ -572,7 +559,7 @@ fn assert_function_literal(expression: &Expression) -> Result<(), Error> {
                         expression,
                         "$x",
                         &Token {
-                            literal: "+".to_string(),
+                            value: "+".to_string(),
                             token_type: TokenType::Plus,
                         },
                         "$y",
@@ -601,7 +588,7 @@ fn assert_call_expression(expression: &Expression) -> Result<(), Error> {
             "2",
             &Token {
                 token_type: TokenType::Asterisk,
-                literal: "*".to_string(),
+                value: "*".to_string(),
             },
             "3",
         )?;
@@ -611,7 +598,7 @@ fn assert_call_expression(expression: &Expression) -> Result<(), Error> {
             "4",
             &Token {
                 token_type: TokenType::Plus,
-                literal: "+".to_string(),
+                value: "+".to_string(),
             },
             "5",
         )?;
@@ -663,11 +650,11 @@ fn assert_prefix_expression(
 fn assert_literal_expression(expression: &Expression, expected: &str) -> Result<bool, Error> {
     match expression {
         Expression::Literal(Literal::Integer(integer_literal)) => {
-            assert_eq!(expected, integer_literal.value.to_string());
+            assert_eq!(expected, integer_literal.to_string());
             Ok(true)
         }
         Expression::Identifier(identifier) => {
-            assert_eq!(expected, identifier.value);
+            assert_eq!(expected, identifier.token.value);
             Ok(true)
         }
         _ => {

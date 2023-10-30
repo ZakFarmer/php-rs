@@ -1,8 +1,8 @@
 use anyhow::Error;
 
-use token::TokenType;
+use token::{TokenType, Token};
 
-use lexer::{token::Token, *};
+use lexer::{*};
 
 #[test]
 fn test_lexer() -> Result<(), Error> {
@@ -22,139 +22,139 @@ fn test_lexer() -> Result<(), Error> {
     let expected_tokens = [
         Token {
             token_type: TokenType::Ident,
-            literal: "$five".to_string(),
+            value: "$five".to_string(),
         },
         Token {
             token_type: TokenType::Assign,
-            literal: "=".to_string(),
+            value: "=".to_string(),
         },
         Token {
             token_type: TokenType::Int,
-            literal: "5".to_string(),
+            value: "5".to_string(),
         },
         Token {
             token_type: TokenType::Semicolon,
-            literal: ";".to_string(),
+            value: ";".to_string(),
         },
         Token {
             token_type: TokenType::Ident,
-            literal: "$ten".to_string(),
+            value: "$ten".to_string(),
         },
         Token {
             token_type: TokenType::Assign,
-            literal: "=".to_string(),
+            value: "=".to_string(),
         },
         Token {
             token_type: TokenType::Ident,
-            literal: "$five".to_string(),
+            value: "$five".to_string(),
         },
         Token {
             token_type: TokenType::Plus,
-            literal: "+".to_string(),
+            value: "+".to_string(),
         },
         Token {
             token_type: TokenType::Int,
-            literal: "5".to_string(),
+            value: "5".to_string(),
         },
         Token {
             token_type: TokenType::Semicolon,
-            literal: ";".to_string(),
+            value: ";".to_string(),
         },
         Token {
             token_type: TokenType::Ident,
-            literal: "$add".to_string(),
+            value: "$add".to_string(),
         },
         Token {
             token_type: TokenType::Assign,
-            literal: "=".to_string(),
+            value: "=".to_string(),
         },
         Token {
             token_type: TokenType::Function,
-            literal: "function".to_string(),
+            value: "function".to_string(),
         },
         Token {
             token_type: TokenType::LParen,
-            literal: "(".to_string(),
+            value: "(".to_string(),
         },
         Token {
             token_type: TokenType::Ident,
-            literal: "$x".to_string(),
+            value: "$x".to_string(),
         },
         Token {
             token_type: TokenType::Comma,
-            literal: ",".to_string(),
+            value: ",".to_string(),
         },
         Token {
             token_type: TokenType::Ident,
-            literal: "$y".to_string(),
+            value: "$y".to_string(),
         },
         Token {
             token_type: TokenType::RParen,
-            literal: ")".to_string(),
+            value: ")".to_string(),
         },
         Token {
             token_type: TokenType::LBrace,
-            literal: "{".to_string(),
+            value: "{".to_string(),
         },
         Token {
             token_type: TokenType::Return,
-            literal: "return".to_string(),
+            value: "return".to_string(),
         },
         Token {
             token_type: TokenType::Ident,
-            literal: "$x".to_string(),
+            value: "$x".to_string(),
         },
         Token {
             token_type: TokenType::Plus,
-            literal: "+".to_string(),
+            value: "+".to_string(),
         },
         Token {
             token_type: TokenType::Ident,
-            literal: "$y".to_string(),
+            value: "$y".to_string(),
         },
         Token {
             token_type: TokenType::Semicolon,
-            literal: ";".to_string(),
+            value: ";".to_string(),
         },
         Token {
             token_type: TokenType::RBrace,
-            literal: "}".to_string(),
+            value: "}".to_string(),
         },
         Token {
             token_type: TokenType::Ident,
-            literal: "$result".to_string(),
+            value: "$result".to_string(),
         },
         Token {
             token_type: TokenType::Assign,
-            literal: "=".to_string(),
+            value: "=".to_string(),
         },
         Token {
             token_type: TokenType::Ident,
-            literal: "$add".to_string(),
+            value: "$add".to_string(),
         },
         Token {
             token_type: TokenType::LParen,
-            literal: "(".to_string(),
+            value: "(".to_string(),
         },
         Token {
             token_type: TokenType::Ident,
-            literal: "$five".to_string(),
+            value: "$five".to_string(),
         },
         Token {
             token_type: TokenType::Comma,
-            literal: ",".to_string(),
+            value: ",".to_string(),
         },
         Token {
             token_type: TokenType::Ident,
-            literal: "$ten".to_string(),
+            value: "$ten".to_string(),
         },
         Token {
             token_type: TokenType::RParen,
-            literal: ")".to_string(),
+            value: ")".to_string(),
         },
         Token {
             token_type: TokenType::Semicolon,
-            literal: ";".to_string(),
+            value: ";".to_string(),
         },
     ];
 

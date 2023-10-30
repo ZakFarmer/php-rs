@@ -45,8 +45,8 @@ pub fn init_state() {
 }
 
 fn execute(input: &str, state: &mut ExecutionState) -> Result<String, String> {
-    let lexer = Lexer::new(input);
-    let mut parser = Parser::new(lexer);
+    let mut parser = Parser::new(input);
+    
     let program = parser
         .parse_program()
         .map_err(|e| format!("Error parsing: {}", e))?;

@@ -70,7 +70,7 @@ pub struct CompiledFunction {
 
 impl CompiledFunction {
     pub fn new(instructions: Instructions, num_locals: usize) -> Self {
-        Self { 
+        Self {
             instructions,
             num_locals,
         }

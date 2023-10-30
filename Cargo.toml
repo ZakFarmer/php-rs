@@ -1,2 +1,12 @@
 [workspace]
-members = [    "opcode",     "compiler",    "lexer",    "parser",    "evaluator",    "object",    "interpreter",    "vm",    "wasm"]
+members = [
+    "codegen",
+    "compiler",
+    "interpreter",
+    "lexer",  
+    "object",  
+    "parser",
+    "token",
+    "vm",
+    "wasm"
+]

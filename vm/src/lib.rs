@@ -61,10 +61,7 @@ impl Vm {
                 let base_pointer = self.stack_pointer - num_args;
                 let cloned_function = compiled_function.as_ref().clone();
 
-                let frame = frame::Frame::new(
-                    cloned_function,
-                    base_pointer,
-                );
+                let frame = frame::Frame::new(cloned_function, base_pointer);
 
                 self.stack_pointer = base_pointer + compiled_function.num_locals as usize;
                 self.push_frame(frame);
@@ -78,10 +75,7 @@ impl Vm {
     pub fn new(bytecode: Bytecode) -> Self {
         let empty_frame = frame::Frame::new(CompiledFunction::new(Instructions(vec![]), 0), 0);
 
-        let main_function = CompiledFunction::new(
-            bytecode.instructions.clone(),
-             0
-        );
+        let main_function = CompiledFunction::new(bytecode.instructions.clone(), 0);
 
         let main_frame = frame::Frame::new(main_function, 0);
 
@@ -196,9 +190,8 @@ impl Vm {
 
                     self.current_frame().instruction_pointer += 1;
 
-                    let builtin_definition = object::builtins::BUILTINS.get(builtin_index)
-                        .unwrap()
-                        .1;
+                    let builtin_definition =
+                        object::builtins::BUILTINS.get(builtin_index).unwrap().1;
 
                     self.push(Rc::new(Object::Builtin(builtin_definition)));
                 }
