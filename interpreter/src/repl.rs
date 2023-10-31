@@ -36,9 +36,7 @@ pub fn init_repl() -> Result<(), Error> {
                 rl.add_history_entry(line.as_str())?;
 
                 for previous in &previous_expressions {
-                    Jit::compile(
-                        previous
-                    )?;
+                    Jit::compile(previous)?;
                 }
 
                 let parsed_program = Parser::new(&line).parse_program()?;
