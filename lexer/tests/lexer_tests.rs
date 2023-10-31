@@ -1,8 +1,8 @@
 use anyhow::Error;
 
-use token::{TokenType, Token};
+use token::{Token, TokenType};
 
-use lexer::{*};
+use lexer::*;
 
 #[test]
 fn test_lexer() -> Result<(), Error> {

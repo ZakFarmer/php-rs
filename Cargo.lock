@@ -80,23 +80,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "codegen"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "env_logger",
- "inkwell",
- "log",
- "parser",
- "token",
-]
-
-[[package]]
 name = "compiler"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "env_logger",
+ "inkwell",
  "lazy_static",
  "lexer",
  "log",
@@ -223,7 +212,6 @@ name = "interpreter"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "codegen",
  "compiler",
  "env_logger",
  "inkwell",

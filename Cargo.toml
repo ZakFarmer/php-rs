@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "codegen",
     "compiler",
     "interpreter",
     "lexer",  

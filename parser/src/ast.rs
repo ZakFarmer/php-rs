@@ -32,7 +32,7 @@ pub enum Literal {
     Float(f64),
     Boolean(bool),
     String(String),
-    Array(ArrayLiteral)
+    Array(ArrayLiteral),
 }
 
 impl std::fmt::Display for Literal {
@@ -41,7 +41,7 @@ impl std::fmt::Display for Literal {
             Literal::Integer(value) => write!(f, "{}", value),
             Literal::Boolean(value) => write!(f, "{}", value),
             Literal::String(value) => write!(f, "{}", value),
-            Literal::Float(value) => write!(f,  "{}", value),
+            Literal::Float(value) => write!(f, "{}", value),
             Literal::Array(array) => {
                 let mut array_string = String::new();
 

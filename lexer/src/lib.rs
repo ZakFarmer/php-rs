@@ -105,10 +105,7 @@ impl<'a> Lexer<'a> {
 
         self.read_char();
 
-        Token {
-            token_type,
-            value,
-        }
+        Token { token_type, value }
     }
 
     fn peek_char(&self) -> char {

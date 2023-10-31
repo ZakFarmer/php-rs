@@ -2,12 +2,12 @@ use std::rc::Rc;
 
 use anyhow::Error;
 use opcode::{Instructions, Opcode};
-use parser::ast::{
-    BlockStatement, Expression, Literal, Node, Statement,
-};
+use parser::ast::{BlockStatement, Expression, Literal, Node, Statement};
 use symbol_table::{Symbol, SymbolScope, SymbolTable};
 use token::{Token, TokenType};
 
+pub mod codegen;
+pub mod jit;
 pub mod symbol_table;
 
 #[derive(Clone, PartialEq)]
@@ -455,14 +455,16 @@ impl Compiler {
 
                     Ok(())
                 }
-                Literal::Boolean(boolean) => if *boolean {
-                    self.emit(opcode::Opcode::OpTrue, vec![]);
+                Literal::Boolean(boolean) => {
+                    if *boolean {
+                        self.emit(opcode::Opcode::OpTrue, vec![]);
 
-                    Ok(())
-                } else {
-                    self.emit(opcode::Opcode::OpFalse, vec![]);
+                        Ok(())
+                    } else {
+                        self.emit(opcode::Opcode::OpFalse, vec![]);
 
-                    Ok(())
+                        Ok(())
+                    }
                 }
                 Literal::Integer(value) => {
                     let integer = object::Object::Integer(*value);

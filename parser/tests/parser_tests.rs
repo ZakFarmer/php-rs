@@ -1,6 +1,4 @@
-use lexer::{
-    Lexer,
-};
+use lexer::Lexer;
 use parser::{
     ast::{BlockStatement, Expression, Literal},
     *,
@@ -337,9 +335,7 @@ fn test_array_literal_expression() -> Result<(), Error> {
     parser.check_errors()?;
 
     if let Statement::Expr(expression) = &program.statements[0] {
-        if let Expression::Literal(Literal::Array(ArrayLiteral { elements })) =
-            &expression
-        {
+        if let Expression::Literal(Literal::Array(ArrayLiteral { elements })) = &expression {
             assert_eq!(3, elements.len());
 
             assert_integer_literal(&elements[0], 1)?;

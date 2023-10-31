@@ -1,14 +1,15 @@
 use std::collections::HashMap;
 
 use anyhow::{Error, Result};
-use ast::{Literal, ArrayLiteral};
+use ast::{ArrayLiteral, Literal};
 use log::info;
 
 pub mod ast;
 
 use crate::ast::{
-    Assignment, BlockStatement, CallExpression, Expression,
-    FunctionLiteral, Identifier, IfExpression, IndexExpression, InfixExpression, PrefixExpression, Program, ReturnStatement, Statement,
+    Assignment, BlockStatement, CallExpression, Expression, FunctionLiteral, Identifier,
+    IfExpression, IndexExpression, InfixExpression, PrefixExpression, Program, ReturnStatement,
+    Statement,
 };
 
 use lexer::Lexer;
@@ -266,9 +267,7 @@ impl<'a> Parser<'a> {
         if let Some(token) = &self.current_token {
             match &token.token_type {
                 TokenType::Return => self.parse_return_statement(),
-                TokenType::Ident if token
-                    .value
-                    .starts_with('$') => {
+                TokenType::Ident if token.value.starts_with('$') => {
                     if self.peek_token_is(&TokenType::Assign) {
                         self.parse_assignment_statement()
                     } else {
@@ -500,9 +499,7 @@ impl<'a> Parser<'a> {
 
         loop {
             if let Some(token) = &self.current_token {
-                if token.token_type == TokenType::Ident && token
-                    .value
-                    .starts_with('$') {
+                if token.token_type == TokenType::Ident && token.value.starts_with('$') {
                     let identifier = Identifier {
                         token: token.clone(),
                     };
