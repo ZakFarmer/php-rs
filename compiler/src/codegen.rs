@@ -61,7 +61,7 @@ impl<'a> RecursiveBuilder<'a> {
             Expression::Index(index_expression) => todo!(),
             Expression::Infix(infix_expression) => self.build_infix_expression(infix_expression),
             Expression::Literal(literal) => self.build_literal(literal),
-            Expression::Prefix(prefix_expression) => todo!(),
+            Expression::Prefix(prefix_expression) => self.build_prefix_expression(prefix_expression),
             _ => panic!("Unknown expression"),
         }
     }
@@ -110,6 +110,24 @@ impl<'a> RecursiveBuilder<'a> {
                 right,
                 "not_equal_to",
             ),
+            _ => panic!("Unknown operator"),
+        }
+    }
+
+    fn build_prefix_expression(
+        &self,
+        prefix_expression: &parser::ast::PrefixExpression,
+    ) -> IntValue {
+        let right = self.build_expression(&prefix_expression.right);
+
+        match prefix_expression.operator.token_type {
+            TokenType::Bang => self.builder.build_int_compare(
+                inkwell::IntPredicate::EQ,
+                right,
+                self.i32_type.const_int(0, false),
+                "not",
+            ),
+            TokenType::Minus => self.builder.build_int_neg(right, "neg"),
             _ => panic!("Unknown operator"),
         }
     }
