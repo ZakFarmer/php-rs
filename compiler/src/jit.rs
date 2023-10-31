@@ -1,10 +1,8 @@
-use std::collections::HashMap;
-
 use anyhow::Error;
 use inkwell::{context::Context, execution_engine::JitFunction, OptimizationLevel};
 use parser::ast::Node;
 
-use crate::{codegen::builder::RecursiveBuilder, jit};
+use crate::codegen::builder::RecursiveBuilder;
 
 type JitFn = unsafe extern "C" fn() -> i32;
 

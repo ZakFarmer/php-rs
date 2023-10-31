@@ -1,5 +1,5 @@
 use inkwell::values::BasicValueEnum;
-use token::{Token, TokenType};
+use token::TokenType;
 
 use super::builder::RecursiveBuilder;
 

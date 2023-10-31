@@ -4,14 +4,14 @@ use token::TokenType;
 
 use super::builder::RecursiveBuilder;
 
-impl <'a> RecursiveBuilder <'a> {
+impl<'a> RecursiveBuilder<'a> {
     pub fn build_expression(&self, expression: &Expression) -> BasicValueEnum {
         match expression {
-            Expression::Call(call_expression) => todo!(),
-            Expression::Function(function_literal) => todo!(),
+            Expression::Call(_call_expression) => todo!(),
+            Expression::Function(_function_literal) => todo!(),
             Expression::Identifier(ref identifier) => self.build_identifier(identifier),
-            Expression::If(if_expression) => todo!(),
-            Expression::Index(index_expression) => todo!(),
+            Expression::If(_if_expression) => todo!(),
+            Expression::Index(_index_expression) => todo!(),
             Expression::Infix(infix_expression) => self.build_infix_expression(infix_expression),
             Expression::Literal(literal) => self.build_literal(literal),
             Expression::Prefix(prefix_expression) => {

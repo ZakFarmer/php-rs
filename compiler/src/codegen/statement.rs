@@ -1,9 +1,9 @@
 use inkwell::values::BasicValueEnum;
-use parser::ast::{Identifier, Assignment, Statement};
+use parser::ast::{Assignment, Identifier, Statement};
 
 use super::builder::RecursiveBuilder;
 
-impl <'a> RecursiveBuilder <'a> {
+impl<'a> RecursiveBuilder<'a> {
     pub fn build_assignment(&self, assignment: &Assignment) -> BasicValueEnum {
         let value = self.build_expression(&assignment.value);
 
@@ -25,7 +25,7 @@ impl <'a> RecursiveBuilder <'a> {
         match statement {
             Statement::Assign(assign_statement) => self.build_assignment(assign_statement),
             Statement::Expr(expression) => self.build_expression(expression),
-            Statement::Return(return_statement) => todo!(),
+            Statement::Return(_return_statement) => todo!(),
             _ => panic!("Unknown statement"),
         }
     }

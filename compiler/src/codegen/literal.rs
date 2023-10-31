@@ -6,9 +6,9 @@ use super::builder::RecursiveBuilder;
 impl<'a> RecursiveBuilder<'a> {
     pub fn build_literal(&self, literal: &Literal) -> BasicValueEnum {
         match literal {
-            Literal::Array(array) => todo!(),
-            Literal::Boolean(value) => todo!(),
-            Literal::Float(value) => todo!(),
+            Literal::Array(_array) => todo!(),
+            Literal::Boolean(_value) => todo!(),
+            Literal::Float(_value) => todo!(),
             Literal::Integer(value) => self.build_integer_literal(value),
             Literal::String(value) => self.build_string_literal(value),
             _ => panic!("Unknown literal"),

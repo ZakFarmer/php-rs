@@ -1,23 +1,11 @@
 use std::collections::HashMap;
 
-use anyhow::Error;
 use inkwell::{
     builder::Builder,
-    context::Context,
-    execution_engine::ExecutionEngine,
-    module::Module,
-    passes::PassManager,
     types::IntType,
-    values::{
-        AnyValueEnum, BasicValue, BasicValueEnum, FunctionValue, InstructionValue, IntValue,
-        PointerValue,
-    },
-    OptimizationLevel,
+    values::{BasicValueEnum, PointerValue},
 };
-use parser::ast::{
-    Assignment, Expression, FunctionLiteral, Identifier, Literal, Node, Program, Statement,
-};
-use token::TokenType;
+use parser::ast::{Identifier, Node, Program};
 
 pub struct RecursiveBuilder<'a> {
     pub builder: &'a Builder<'a>,

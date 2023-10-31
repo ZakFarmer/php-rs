@@ -2,7 +2,7 @@ use std::{borrow::Borrow, rc::Rc};
 
 use anyhow::Error;
 use compiler::Compiler;
-use lexer::Lexer;
+
 use object::Object;
 use opcode::concat_instructions;
 use parser::ast::Node;
@@ -514,8 +514,6 @@ fn run_compiler_tests(tests: Vec<CompilerTestCase>) -> Result<(), Error> {
     for test in tests {
         let mut parser = parser::Parser::new(&test.input);
         let program = parser.parse_program()?;
-
-        dbg!(&program);
 
         let mut compiler = Compiler::new();
 

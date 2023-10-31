@@ -1,4 +1,3 @@
-use lexer::Lexer;
 use parser::{
     ast::{BlockStatement, Expression, Literal},
     *,

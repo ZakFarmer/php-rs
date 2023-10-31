@@ -308,8 +308,6 @@ impl Compiler {
             Expression::Identifier(identifier) => {
                 let symbol = self.symbol_table.resolve(identifier.token.value.clone());
 
-                dbg!(&self.symbol_table.store);
-
                 match symbol {
                     Some(symbol) => {
                         self.load_symbol(&symbol);

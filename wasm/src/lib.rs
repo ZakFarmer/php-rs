@@ -1,12 +1,11 @@
 use std::rc::Rc;
 
 use compiler::{symbol_table::SymbolTable, Compiler};
-use lexer::Lexer;
+
 use object::Object;
 use parser::{ast::Node, Parser};
 use vm::{Vm, GLOBALS_SIZE};
 use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
-use web_sys::console;
 
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]

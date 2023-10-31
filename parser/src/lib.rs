@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use anyhow::{Error, Result};
 use ast::{ArrayLiteral, Literal};
-use log::info;
 
 pub mod ast;
 
@@ -208,7 +207,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_array_literal(&mut self) -> Result<Expression> {
-        let current_token = self.current_token.clone().unwrap();
+        let _current_token = self.current_token.clone().unwrap();
 
         let elements = self.parse_expression_list(TokenType::RBracket)?;
 
@@ -218,7 +217,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_boolean_literal(&mut self) -> Result<Expression> {
-        let current_token = self.current_token.clone().unwrap();
+        let _current_token = self.current_token.clone().unwrap();
 
         let value = match self.current_token.as_ref().unwrap().token_type {
             TokenType::True => true,
@@ -235,7 +234,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_string_literal(&mut self) -> Result<Expression> {
-        let current_token = self.current_token.clone().unwrap();
+        let _current_token = self.current_token.clone().unwrap();
 
         let value = self.current_token.as_ref().unwrap().to_string();
 
@@ -339,8 +338,6 @@ impl<'a> Parser<'a> {
                         },
                         value: value_expression,
                     };
-
-                    dbg!(&variable_assignment);
 
                     if self.peek_token_is(&TokenType::Semicolon) {
                         self.next_token();
@@ -552,7 +549,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_integer_literal(&mut self) -> Result<Expression> {
-        let current_token = self.current_token.clone().unwrap();
+        let _current_token = self.current_token.clone().unwrap();
 
         let value = self
             .current_token

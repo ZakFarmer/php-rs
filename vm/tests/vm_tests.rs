@@ -2,7 +2,7 @@ use std::{borrow::Borrow, rc::Rc};
 
 use anyhow::Error;
 use compiler::Compiler;
-use lexer::Lexer;
+
 use object::Object;
 use parser::{ast::Node, Parser};
 use vm::Vm;

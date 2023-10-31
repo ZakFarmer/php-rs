@@ -1,18 +1,9 @@
-use std::rc::Rc;
+use anyhow::{Error, Result};
 
-use anyhow::{anyhow, Error, Result};
+use compiler::jit::Jit;
 
-use compiler::{jit::Jit, symbol_table::SymbolTable, Compiler};
-use inkwell::{builder::Builder, context::Context, module::Module, passes::PassManager};
-use lexer::Lexer;
-
-use object::Object;
-use parser::{
-    ast::{Expression, Identifier, Node, Program, Statement},
-    Parser,
-};
+use parser::{ast::Node, Parser};
 use rustyline::error::ReadlineError;
-use vm::{Vm, GLOBALS_SIZE};
 
 const PROMPT: &str = ">> ";
 
