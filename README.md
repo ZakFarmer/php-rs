@@ -20,7 +20,9 @@ You can find it [here](https://php-rs.zakfarmer.com).
 - Conditional operators / boolean expressions
 - First-class functions
 - Variable assignment & scopes
-- WASM binary
+- Compilation to VM bytecode
+- Custom VM
+- WASM support
 
 Expect this list to grow 😁
 
