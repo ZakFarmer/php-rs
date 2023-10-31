@@ -53,9 +53,6 @@ The design of the project was heavily influenced by Thorsten Ball's "Writing an 
 ## Contributing
 
 Although this project isn't intended to be anything consequential and certainly won't ever be used in production, contributions for educational purposes or to address small issues are always welcome.
-
-Of course! Here's a new section you can add to your `README.md`:
-
 ## Disclaimer
 
 This project is an independent work and is not affiliated with, endorsed by, or sponsored by the official PHP development team or the PHP Group. The interpreter has been created for experimental and educational purposes only.
