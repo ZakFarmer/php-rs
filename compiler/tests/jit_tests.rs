@@ -1,8 +1,5 @@
 use anyhow::Error;
-use compiler::{
-    jit::{Jit, JitValue},
-    Compiler,
-};
+use compiler::{jit::JitValue, Compiler};
 use inkwell::context::Context;
 use parser::{ast::Node, Parser};
 

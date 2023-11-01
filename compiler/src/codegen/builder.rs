@@ -5,7 +5,7 @@ use inkwell::{
     types::IntType,
     values::{BasicValueEnum, PointerValue},
 };
-use parser::ast::{Identifier, Node, Program};
+use parser::ast::{Node, Program};
 
 pub struct RecursiveBuilder<'a> {
     pub builder: &'a Builder<'a>,

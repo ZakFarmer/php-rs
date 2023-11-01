@@ -1,14 +1,7 @@
 #![deny(elided_lifetimes_in_paths)]
 
 use anyhow::Error;
-use inkwell::{
-    builder::Builder,
-    context::Context,
-    execution_engine::{self, ExecutionEngine},
-    module::Module,
-    OptimizationLevel,
-};
-use jit::JitValue;
+use inkwell::{context::Context, OptimizationLevel};
 
 pub mod codegen;
 pub mod jit;

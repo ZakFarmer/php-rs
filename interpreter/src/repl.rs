@@ -1,8 +1,8 @@
 use anyhow::{Error, Result};
 
-use compiler::{jit::Jit, Compiler};
+use compiler::Compiler;
 
-use inkwell::{context::Context, OptimizationLevel};
+use inkwell::context::Context;
 use parser::{ast::Node, Parser};
 use rustyline::error::ReadlineError;
 

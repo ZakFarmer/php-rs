@@ -4,7 +4,6 @@ use inkwell::{
     context::Context,
     execution_engine::{ExecutionEngine, JitFunction},
     module::Module,
-    OptimizationLevel,
 };
 use parser::ast::Node;
 
@@ -103,11 +102,7 @@ impl<'ctx> Jit<'ctx> {
         self.builder.position_at_end(basic_block);
 
         // Build the program
-        let recursive_builder = RecursiveBuilder::new(
-            bool_type, 
-            i32_type, 
-            &self.builder
-        );
+        let recursive_builder = RecursiveBuilder::new(bool_type, i32_type, &self.builder);
 
         let return_value = recursive_builder.build(ast);
 
