@@ -5,20 +5,29 @@ use super::builder::RecursiveBuilder;
 
 impl<'a> RecursiveBuilder<'a> {
     pub fn build_assignment(&self, assignment: &Assignment) -> BasicValueEnum {
-        let value = self.build_expression(&assignment.value);
+        // Compute without mutating self
+        let (token_value, expression_value) = {
+            let token_value = match &assignment.name {
+                Identifier { token } => token.value.clone(),
+                _ => panic!("Unknown identifier"),
+            };
 
-        match &assignment.name {
-            Identifier { token } => {
-                let name = token.value.as_str();
+            let expression_value = self.build_expression(&assignment.value);
 
-                let alloca = self.builder.build_alloca(self.i32_type, name);
+            (token_value, expression_value)
+        };
 
-                self.builder.build_store(alloca, value);
+        // Mutate self
+        let name = token_value.as_str();
+        let alloca = self.builder.build_alloca(self.i32_type, name);
+        self.builder.build_store(alloca, expression_value);
 
-                value
-            }
-            _ => panic!("Unknown identifier"),
-        }
+        // Store a pointer to the value
+        self.variables
+            .borrow_mut()
+            .insert(token_value, alloca);
+
+        expression_value
     }
 
     pub fn build_statement(&self, statement: &Statement) -> BasicValueEnum {

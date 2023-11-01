@@ -3,6 +3,24 @@ use compiler::jit::Jit;
 use parser::{ast::Node, Parser};
 
 #[test]
+fn test_assign_statements() -> Result<(), Error> {
+    let tests = vec![
+        ("$a = 5; $a;", 5),
+        ("$a = 5 * 5; $a;", 25),
+        ("$a = 5; $b = $a; $b;", 5),
+        ("$a = 5; $b = $a; $c = $a + $b + 5; $c;", 15),
+    ];
+
+    for (input, expected) in tests {
+        let evaluated = test_eval(input)?;
+
+        assert_eq!(evaluated, expected);
+    }
+
+    Ok(())
+}
+
+#[test]
 fn test_integer_arithmetic() -> Result<(), Error> {
     let tests = vec![
         ("1", 1),

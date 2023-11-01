@@ -28,7 +28,7 @@ impl Jit {
         builder.position_at_end(basic_block);
 
         // Build the program
-        let recursive_builder = RecursiveBuilder::new(i32_type, &builder);
+        let mut recursive_builder = RecursiveBuilder::new(i32_type, &builder);
         let return_value = recursive_builder.build(ast);
 
         _ = builder.build_return(Some(&return_value));

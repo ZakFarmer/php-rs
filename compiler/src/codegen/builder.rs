@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, cell::RefCell};
 
 use inkwell::{
     builder::Builder,
@@ -11,8 +11,8 @@ pub struct RecursiveBuilder<'a> {
     pub builder: &'a Builder<'a>,
     pub i32_type: IntType<'a>,
 
-    pub builtins: HashMap<String, PointerValue<'a>>,
-    pub variables: HashMap<String, PointerValue<'a>>,
+    pub builtins: RefCell<HashMap<String, PointerValue<'a>>>,
+    pub variables: RefCell<HashMap<String, PointerValue<'a>>>,
 }
 
 impl<'a> RecursiveBuilder<'a> {
@@ -20,8 +20,8 @@ impl<'a> RecursiveBuilder<'a> {
         Self {
             builder,
             i32_type,
-            builtins: HashMap::new(),
-            variables: HashMap::new(),
+            builtins: RefCell::new(HashMap::new()),
+            variables: RefCell::new(HashMap::new()),
         }
     }
 
@@ -35,12 +35,16 @@ impl<'a> RecursiveBuilder<'a> {
     }
 
     fn build_program(&self, program: &Program) -> BasicValueEnum {
-        let mut last: BasicValueEnum = BasicValueEnum::IntValue(self.i32_type.const_int(0, false));
-
+        let mut results: Vec<BasicValueEnum> = vec![];
+    
         for statement in &program.statements {
-            last = self.build_statement(statement);
+            results.push(self.build_statement(statement));
         }
-
+    
+        let last = results.last().cloned().unwrap_or_else(|| BasicValueEnum::IntValue(self.i32_type.const_int(0, false)));
+    
         last
     }
+    
+    
 }
