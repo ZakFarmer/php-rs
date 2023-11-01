@@ -16,7 +16,7 @@ pub struct RecursiveBuilder<'a> {
 }
 
 impl<'a> RecursiveBuilder<'a> {
-    pub fn new(i32_type: IntType<'a>, builder: &'a Builder) -> Self {
+    pub fn new(i32_type: IntType<'a>, builder: &'a Builder<'_>) -> Self {
         Self {
             builder,
             i32_type,
@@ -25,7 +25,7 @@ impl<'a> RecursiveBuilder<'a> {
         }
     }
 
-    pub fn build(&self, ast: &Node) -> BasicValueEnum {
+    pub fn build(&self, ast: &Node) -> BasicValueEnum<'_> {
         match ast {
             Node::Program(n) => self.build_program(n),
             Node::Statement(n) => self.build_statement(n),
@@ -34,8 +34,8 @@ impl<'a> RecursiveBuilder<'a> {
         }
     }
 
-    fn build_program(&self, program: &Program) -> BasicValueEnum {
-        let mut results: Vec<BasicValueEnum> = vec![];
+    fn build_program(&self, program: &Program) -> BasicValueEnum<'_> {
+        let mut results: Vec<BasicValueEnum<'_>> = vec![];
     
         for statement in &program.statements {
             results.push(self.build_statement(statement));

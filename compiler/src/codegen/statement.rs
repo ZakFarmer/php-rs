@@ -4,7 +4,7 @@ use parser::ast::{Assignment, Identifier, Statement};
 use super::builder::RecursiveBuilder;
 
 impl<'a> RecursiveBuilder<'a> {
-    pub fn build_assignment(&self, assignment: &Assignment) -> BasicValueEnum {
+    pub fn build_assignment(&self, assignment: &Assignment) -> BasicValueEnum<'_> {
         // Compute without mutating self
         let (token_value, expression_value) = {
             let token_value = match &assignment.name {
@@ -30,7 +30,7 @@ impl<'a> RecursiveBuilder<'a> {
         expression_value
     }
 
-    pub fn build_statement(&self, statement: &Statement) -> BasicValueEnum {
+    pub fn build_statement(&self, statement: &Statement) -> BasicValueEnum<'_> {
         match statement {
             Statement::Assign(assign_statement) => self.build_assignment(assign_statement),
             Statement::Expr(expression) => self.build_expression(expression),

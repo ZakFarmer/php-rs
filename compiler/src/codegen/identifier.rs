@@ -4,7 +4,7 @@ use parser::ast::Identifier;
 use super::builder::RecursiveBuilder;
 
 impl <'a> RecursiveBuilder <'a> {
-    pub fn build_identifier(&self, identifier: &Identifier) -> BasicValueEnum {
+    pub fn build_identifier(&self, identifier: &Identifier) -> BasicValueEnum<'_> {
         let built = match self.variables
             .borrow()
             .get(&identifier.token.value) {

@@ -7,7 +7,7 @@ impl<'a> RecursiveBuilder<'a> {
     pub fn build_infix_expression(
         &self,
         infix_expression: &parser::ast::InfixExpression,
-    ) -> BasicValueEnum {
+    ) -> BasicValueEnum<'_> {
         let left_value = self.build_expression(&infix_expression.left);
         let right_value = self.build_expression(&infix_expression.right);
 

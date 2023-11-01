@@ -1,7 +1,8 @@
 use anyhow::{Error, Result};
 
-use compiler::jit::Jit;
+use compiler::{jit::Jit, Compiler};
 
+use inkwell::{context::Context, OptimizationLevel};
 use parser::{ast::Node, Parser};
 use rustyline::error::ReadlineError;
 
@@ -17,22 +18,21 @@ pub fn init_repl() -> Result<(), Error> {
 
     println!("php-rs interpreter v{}", env!("CARGO_PKG_VERSION"));
 
-    let previous_expressions = Vec::new();
-
     loop {
         let readline = rl.readline(format!("{}", PROMPT).as_str());
 
         match readline {
             Ok(line) => {
-                rl.add_history_entry(line.as_str())?;
+                let context = Context::create();
+                let mut compiler = Compiler::new(&context);
 
-                for previous in &previous_expressions {
-                    Jit::compile(previous)?;
-                }
+                rl.add_history_entry(line.as_str())?;
 
                 let parsed_program = Parser::new(&line).parse_program()?;
 
-                let _llvm_values = Jit::compile(&Node::Program(parsed_program.clone()))?;
+                let value = compiler.compile(&Node::Program(parsed_program))?;
+
+                println!("{}", value);
             }
             Err(ReadlineError::Interrupted) => {
                 println!("CTRL-C");

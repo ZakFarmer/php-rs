@@ -5,7 +5,7 @@ use token::TokenType;
 use super::builder::RecursiveBuilder;
 
 impl<'a> RecursiveBuilder<'a> {
-    pub fn build_expression(&self, expression: &Expression) -> BasicValueEnum {
+    pub fn build_expression(&self, expression: &Expression) -> BasicValueEnum<'_> {
         match expression {
             Expression::Call(_call_expression) => todo!(),
             Expression::Function(_function_literal) => todo!(),
@@ -24,7 +24,7 @@ impl<'a> RecursiveBuilder<'a> {
     pub fn build_prefix_expression(
         &self,
         prefix_expression: &parser::ast::PrefixExpression,
-    ) -> BasicValueEnum {
+    ) -> BasicValueEnum<'_> {
         let right = self.build_expression(&prefix_expression.right);
 
         let built = match prefix_expression.operator.token_type {

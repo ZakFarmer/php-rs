@@ -16,4 +16,3 @@ log = "0.4.20"
 object = { path = "../object" }
 parser = { path = "../parser" }
 rustyline = { version = "12.0.0", features = ["with-file-history"] }
-vm = { path = "../vm" }
