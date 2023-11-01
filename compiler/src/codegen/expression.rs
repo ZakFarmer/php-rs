@@ -5,6 +5,7 @@ use token::TokenType;
 use super::builder::RecursiveBuilder;
 
 impl<'a> RecursiveBuilder<'a> {
+    /// Build an expression
     pub fn build_expression(&self, expression: &Expression) -> BasicValueEnum<'_> {
         match expression {
             Expression::Call(_call_expression) => todo!(),
@@ -21,6 +22,7 @@ impl<'a> RecursiveBuilder<'a> {
         }
     }
 
+    /// Build a prefix expression
     pub fn build_prefix_expression(
         &self,
         prefix_expression: &parser::ast::PrefixExpression,

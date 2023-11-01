@@ -1,5 +1,8 @@
 use anyhow::Error;
-use compiler::{jit::{Jit, JitValue}, Compiler};
+use compiler::{
+    jit::{Jit, JitValue},
+    Compiler,
+};
 use inkwell::context::Context;
 use parser::{ast::Node, Parser};
 
@@ -16,6 +19,37 @@ fn test_assign_statements() -> Result<(), Error> {
         let evaluated = test_eval(input)?;
 
         assert_eq!(evaluated, expected.as_int().unwrap());
+    }
+
+    Ok(())
+}
+
+#[test]
+fn test_boolean_expressions() -> Result<(), Error> {
+    let tests = vec![
+        ("true", 1),
+        ("false", 0),
+        ("1 < 2", 1),
+        ("1 > 2", 0),
+        ("1 < 1", 0),
+        ("1 > 1", 0),
+        ("1 == 1", 1),
+        ("1 != 1", 0),
+        ("1 == 2", 0),
+        ("1 != 2", 1),
+        ("true == true", 1),
+        ("false == false", 1),
+        ("true == false", 0),
+        ("true != false", 1),
+        ("false != true", 1),
+    ];
+
+    for (input, expected) in tests {
+        let evaluated = test_eval(input)?;
+
+        dbg!(&evaluated);
+
+        assert_eq!(evaluated, expected);
     }
 
     Ok(())

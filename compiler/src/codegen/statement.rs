@@ -4,6 +4,7 @@ use parser::ast::{Assignment, Identifier, Statement};
 use super::builder::RecursiveBuilder;
 
 impl<'a> RecursiveBuilder<'a> {
+    /// Builds an assignment statement
     pub fn build_assignment(&self, assignment: &Assignment) -> BasicValueEnum<'_> {
         // Compute without mutating self
         let (token_value, expression_value) = {
@@ -23,13 +24,12 @@ impl<'a> RecursiveBuilder<'a> {
         self.builder.build_store(alloca, expression_value);
 
         // Store a pointer to the value
-        self.variables
-            .borrow_mut()
-            .insert(token_value, alloca);
+        self.variables.borrow_mut().insert(token_value, alloca);
 
         expression_value
     }
 
+    /// Builds a statement
     pub fn build_statement(&self, statement: &Statement) -> BasicValueEnum<'_> {
         match statement {
             Statement::Assign(assign_statement) => self.build_assignment(assign_statement),

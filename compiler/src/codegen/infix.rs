@@ -4,6 +4,7 @@ use token::TokenType;
 use super::builder::RecursiveBuilder;
 
 impl<'a> RecursiveBuilder<'a> {
+    /// Build an infix expression
     pub fn build_infix_expression(
         &self,
         infix_expression: &parser::ast::InfixExpression,
@@ -52,6 +53,7 @@ impl<'a> RecursiveBuilder<'a> {
         BasicValueEnum::IntValue(result)
     }
 
+    /// Build an infix expression
     fn build_add_infix_expression<'ctx>(
         &'ctx self,
         left: BasicValueEnum<'ctx>,

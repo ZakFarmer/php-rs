@@ -1,7 +1,13 @@
 #![deny(elided_lifetimes_in_paths)]
 
 use anyhow::Error;
-use inkwell::{context::Context, execution_engine::{self, ExecutionEngine}, OptimizationLevel, module::Module, builder::Builder};
+use inkwell::{
+    builder::Builder,
+    context::Context,
+    execution_engine::{self, ExecutionEngine},
+    module::Module,
+    OptimizationLevel,
+};
 use jit::JitValue;
 
 pub mod codegen;
@@ -19,12 +25,10 @@ impl<'ctx> Compiler<'ctx> {
         let execution_engine = module
             .create_jit_execution_engine(OptimizationLevel::None)
             .unwrap();
-        
+
         let jit = jit::Jit::new(&context, module, execution_engine, builder);
 
-        Compiler {
-            jit,
-        }
+        Compiler { jit }
     }
 
     pub fn compile(&mut self, node: &parser::ast::Node) -> Result<i32, Error> {

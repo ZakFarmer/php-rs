@@ -1,11 +1,18 @@
 use anyhow::Error;
-use inkwell::{context::Context, execution_engine::{JitFunction, ExecutionEngine}, OptimizationLevel, builder::Builder, module::Module};
+use inkwell::{
+    builder::Builder,
+    context::Context,
+    execution_engine::{ExecutionEngine, JitFunction},
+    module::Module,
+    OptimizationLevel,
+};
 use parser::ast::Node;
 
 use crate::codegen::builder::RecursiveBuilder;
 
 type JitFn = unsafe extern "C" fn() -> i32;
 
+/// A JIT compiler
 pub struct Jit<'ctx> {
     builder: Builder<'ctx>,
     context: &'ctx Context,
@@ -14,7 +21,13 @@ pub struct Jit<'ctx> {
 }
 
 impl<'ctx> Jit<'ctx> {
-    pub fn new(context: &'ctx Context, module: Module<'ctx>, execution_engine: ExecutionEngine<'ctx>, builder: Builder<'ctx>) -> Self {
+    /// Create a new JIT compiler
+    pub fn new(
+        context: &'ctx Context,
+        module: Module<'ctx>,
+        execution_engine: ExecutionEngine<'ctx>,
+        builder: Builder<'ctx>,
+    ) -> Self {
         Self {
             builder,
             context,
@@ -24,6 +37,7 @@ impl<'ctx> Jit<'ctx> {
     }
 }
 
+/// A value returned by the JIT compiler
 #[repr(C)]
 #[derive(Debug, PartialEq)]
 pub enum JitValue {
@@ -34,6 +48,7 @@ pub enum JitValue {
 }
 
 impl JitValue {
+    /// If possible, convert the value to an integer
     pub fn as_int(&self) -> Option<i32> {
         match self {
             JitValue::Int(i) => Some(*i),
@@ -41,6 +56,7 @@ impl JitValue {
         }
     }
 
+    /// If possible, convert the value to a float
     pub fn as_float(&self) -> Option<f32> {
         match self {
             JitValue::Float(f) => Some(*f),
@@ -48,6 +64,7 @@ impl JitValue {
         }
     }
 
+    /// If possible, convert the value to a string slice
     pub fn as_str(&self) -> Option<&str> {
         match self {
             JitValue::Str(s) => Some(s),
@@ -55,6 +72,7 @@ impl JitValue {
         }
     }
 
+    /// If possible, convert the value to a string
     pub fn as_string(&self) -> Option<String> {
         match self {
             JitValue::Str(s) => Some(s.clone()),
@@ -62,6 +80,7 @@ impl JitValue {
         }
     }
 
+    /// If possible, convert the value to a boolean
     pub fn as_bool(&self) -> Option<bool> {
         match self {
             JitValue::Int(i) => Some(*i != 0),
@@ -71,7 +90,9 @@ impl JitValue {
 }
 
 impl<'ctx> Jit<'ctx> {
+    /// JIT compile a node
     pub fn compile(&self, ast: &Node) -> Result<i32, Error> {
+        let bool_type = self.context.bool_type();
         let i32_type = self.context.i32_type();
 
         let main_function_type = i32_type.fn_type(&[], false);
@@ -82,17 +103,20 @@ impl<'ctx> Jit<'ctx> {
         self.builder.position_at_end(basic_block);
 
         // Build the program
-        let recursive_builder = RecursiveBuilder::new(i32_type, &self.builder);
+        let recursive_builder = RecursiveBuilder::new(
+            bool_type, 
+            i32_type, 
+            &self.builder
+        );
+
         let return_value = recursive_builder.build(ast);
 
         _ = self.builder.build_return(Some(&return_value));
 
-        println!("IR: {}", self.module.print_to_string().to_string());
-
         unsafe {
-            let jit_function: JitFunction<'_, JitFn> = self.execution_engine.get_function("main").unwrap();
-            // dbg!(&jit_function);
-        
+            let jit_function: JitFunction<'_, JitFn> =
+                self.execution_engine.get_function("main").unwrap();
+
             Ok(jit_function.call())
         }
     }
