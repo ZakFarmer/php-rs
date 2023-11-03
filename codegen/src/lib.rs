@@ -1,7 +1,7 @@
 #![deny(elided_lifetimes_in_paths)]
 
 use anyhow::Error;
-use inkwell::{context::Context, OptimizationLevel, types::IntType};
+use inkwell::{context::Context, types::IntType, OptimizationLevel};
 use llvm::Llvm;
 
 pub mod builder;

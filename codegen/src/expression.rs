@@ -21,7 +21,9 @@ impl<'ev> ExpressionValue<'ev> {
 
     pub fn as_r_value(&self, llvm: &Llvm<'ev>, name: Option<&str>) -> BasicValueEnum<'ev> {
         match self {
-            ExpressionValue::LValue(pointer) => llvm.load_pointer(pointer, name.as_deref().unwrap_or("")),
+            ExpressionValue::LValue(pointer) => {
+                llvm.load_pointer(pointer, name.as_deref().unwrap_or(""))
+            }
             ExpressionValue::RValue(value) => *value,
         }
     }
@@ -101,7 +103,10 @@ impl<'ink, 'b> ExpressionBuilder<'ink, 'b> {
                 self.llvm.i32_type().const_int(0, false),
                 "not",
             ),
-            TokenType::Minus => self.llvm.builder.build_int_neg(right.into_int_value(), "neg"),
+            TokenType::Minus => self
+                .llvm
+                .builder
+                .build_int_neg(right.into_int_value(), "neg"),
             _ => panic!("Unknown operator"),
         };
 
@@ -131,20 +136,24 @@ impl<'ink, 'b> ExpressionBuilder<'ink, 'b> {
             TokenType::Minus => self.llvm.builder.build_int_sub(left, right, "sub"),
             TokenType::Asterisk => self.llvm.builder.build_int_mul(left, right, "mul"),
             TokenType::Slash => self.llvm.builder.build_int_unsigned_div(left, right, "div"),
-            TokenType::Lt => {
-                self.llvm.builder
-                    .build_int_compare(inkwell::IntPredicate::SLT, left, right, "less_than")
-            }
+            TokenType::Lt => self.llvm.builder.build_int_compare(
+                inkwell::IntPredicate::SLT,
+                left,
+                right,
+                "less_than",
+            ),
             TokenType::Gt => self.llvm.builder.build_int_compare(
                 inkwell::IntPredicate::SGT,
                 left,
                 right,
                 "greater_than",
             ),
-            TokenType::Eq => {
-                self.llvm.builder
-                    .build_int_compare(inkwell::IntPredicate::EQ, left, right, "equal_to")
-            }
+            TokenType::Eq => self.llvm.builder.build_int_compare(
+                inkwell::IntPredicate::EQ,
+                left,
+                right,
+                "equal_to",
+            ),
             TokenType::NotEq => self.llvm.builder.build_int_compare(
                 inkwell::IntPredicate::NE,
                 left,

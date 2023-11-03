@@ -37,7 +37,7 @@ impl<'ink, 'b> RecursiveBuilder<'ink, 'b> {
             Statement::Expr(expression) => {
                 let expression_builder = ExpressionBuilder::new(self.llvm);
                 expression_builder.build_expression(expression)
-            },
+            }
             Statement::Return(_return_statement) => todo!(),
             _ => panic!("Unknown statement"),
         }

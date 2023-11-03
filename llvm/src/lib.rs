@@ -3,12 +3,14 @@ use inkwell::{
     builder::Builder,
     context::Context,
     execution_engine::{ExecutionEngine, JitFunction},
-    module::Module, values::{PointerValue, BasicValueEnum, GlobalValue}, types::BasicTypeEnum,
+    module::Module,
+    types::BasicTypeEnum,
+    values::{BasicValueEnum, GlobalValue, PointerValue},
 };
 
 type MainFn = unsafe extern "C" fn() -> i32;
 
-pub trait GlobalValueExt { 
+pub trait GlobalValueExt {
     fn make_constant(self) -> Self;
     fn make_external(self) -> Self;
     fn make_private(self) -> Self;
@@ -46,11 +48,7 @@ pub struct Llvm<'ctx> {
 
 impl<'ctx> Llvm<'ctx> {
     /// LLVM constructor
-    pub fn new(
-        builder: Builder<'ctx>,
-        context: &'ctx Context,
-        module: Module<'ctx>,
-    ) -> Llvm<'ctx> {
+    pub fn new(builder: Builder<'ctx>, context: &'ctx Context, module: Module<'ctx>) -> Llvm<'ctx> {
         Llvm {
             builder,
             context,

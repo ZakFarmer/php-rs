@@ -34,7 +34,7 @@ impl<'ink, 'b> RecursiveBuilder<'ink, 'b> {
             Node::Expression(n) => {
                 let expression_builder = ExpressionBuilder::new(self.llvm);
                 expression_builder.build_expression(n)
-            },
+            }
             _ => panic!("Unknown node"),
         }
     }

@@ -10,7 +10,11 @@ impl<'ink, 'b> RecursiveBuilder<'ink, 'b> {
             Some(value) => self
                 .llvm
                 .builder
-                .build_load(self.llvm.i32_type(), *value, identifier.token.value.as_str())
+                .build_load(
+                    self.llvm.i32_type(),
+                    *value,
+                    identifier.token.value.as_str(),
+                )
                 .into_int_value(),
             None => panic!("Unknown identifier"),
         };
