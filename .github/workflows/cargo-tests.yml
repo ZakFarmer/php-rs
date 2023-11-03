@@ -9,7 +9,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Set PATH
-        run: echo "PATH=$PATH:/root/.cargo/bin" >> $GITHUB_ENV
       - name: Run cargo tests
-        run: cargo test
+        run: |
+          source $HOME/.cargo/env
+          cargo test
