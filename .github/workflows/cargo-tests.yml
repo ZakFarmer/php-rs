@@ -1,0 +1,13 @@
+name: Cargo testsuite
+
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: pinelang/llvm-docker:latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Run cargo test
+        run: cargo test
