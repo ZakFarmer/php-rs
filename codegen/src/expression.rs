@@ -156,21 +156,4 @@ impl<'ink, 'b> ExpressionBuilder<'ink, 'b> {
 
         BasicValueEnum::IntValue(result)
     }
-
-    /// Build an infix expression
-    fn build_add_infix_expression<'ctx>(
-        &'ctx self,
-        left: BasicValueEnum<'ctx>,
-        right: BasicValueEnum<'ctx>,
-    ) -> BasicValueEnum<'ctx> {
-        match left {
-            BasicValueEnum::IntValue(left) => match right {
-                BasicValueEnum::IntValue(right) => {
-                    BasicValueEnum::IntValue(self.llvm.builder.build_int_add(left, right, "add"))
-                }
-                _ => panic!("Expected IntValue for right operand"),
-            },
-            _ => panic!("Expected IntValue for left operand"),
-        }
-    }
 }

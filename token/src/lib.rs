@@ -1,3 +1,4 @@
+/// A type of token in the PHP language
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum TokenType {
     Illegal,

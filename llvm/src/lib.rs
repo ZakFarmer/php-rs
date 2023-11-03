@@ -99,34 +99,6 @@ impl<'ctx> Llvm<'ctx> {
         self.builder.build_alloca(*data_type, name)
     }
 
-    // /// Compile a node
-    // pub fn compile(&self, ast: &Node) -> Result<i32, Error> {
-    //     let bool_type = self.context.bool_type();
-    //     let i32_type = self.context.i32_type();
-
-    //     let main_function_type = i32_type.fn_type(&[], false);
-    //     let main_function = self.module.add_function("main", main_function_type, None);
-
-    //     let basic_block = self.context.append_basic_block(main_function, "entry");
-
-    //     self.builder.position_at_end(basic_block);
-
-    //     // Build the program
-    //     let recursive_builder = RecursiveBuilder::new(bool_type, i32_type, &self.builder);
-
-    //     let return_value = recursive_builder.build(ast);
-
-    //     _ = self.builder.build_return(Some(&return_value));
-
-    //     // unsafe {
-    //     //     let jit_function: JitFunction<'_, MainFn> =
-    //     //         self.execution_engine.get_function("main")
-    //     //             .expect("Unable to find main function");
-
-    //     //     Ok(jit_function.call())
-    //     // }
-    // }
-
     pub fn load_pointer(&self, pointer: &PointerValue<'ctx>, name: &str) -> BasicValueEnum<'ctx> {
         self.builder.build_load(self.i32_type(), *pointer, name)
     }
