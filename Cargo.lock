@@ -68,7 +68,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "compiler"
+name = "codegen"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -76,6 +76,7 @@ dependencies = [
  "inkwell",
  "lazy_static",
  "lexer",
+ "llvm",
  "log",
  "object",
  "opcode",
@@ -190,7 +191,6 @@ name = "interpreter"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "compiler",
  "env_logger",
  "inkwell",
  "lazy_static",
@@ -239,6 +239,17 @@ name = "linux-raw-sys"
 version = "0.4.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "da2479e8c062e40bf0066ffa0bc823de0a9368974af99c9f6df941d2c231e03f"
+
+[[package]]
+name = "llvm"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "env_logger",
+ "inkwell",
+ "log",
+ "token",
+]
 
 [[package]]
 name = "llvm-sys"
@@ -477,6 +488,15 @@ name = "smallvec"
 version = "1.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "942b4a808e05215192e39f4ab80813e599068285906cc91aa64f923db842bd5a"
+
+[[package]]
+name = "source"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "env_logger",
+ "log",
+]
 
 [[package]]
 name = "str-buf"

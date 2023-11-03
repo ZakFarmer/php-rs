@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use anyhow::Error;
-use compiler::symbol_table::{Symbol, SymbolScope, SymbolTable};
+use codegen::symbol_table::{SymbolTable, SymbolScope, Symbol};
 
 #[test]
 fn test_define() -> Result<(), Error> {

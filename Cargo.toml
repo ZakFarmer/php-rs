@@ -1,9 +1,11 @@
 [workspace]
 members = [
-    "compiler",
+    "codegen",
     "interpreter",
     "lexer",  
+    "llvm",
     "object",  
     "parser",
+    "source",
     "token"
 ]

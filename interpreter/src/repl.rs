@@ -1,7 +1,5 @@
 use anyhow::{Error, Result};
 
-use compiler::Compiler;
-
 use inkwell::context::Context;
 use parser::{ast::Node, Parser};
 use rustyline::error::ReadlineError;
@@ -23,16 +21,16 @@ pub fn init_repl() -> Result<(), Error> {
 
         match readline {
             Ok(line) => {
-                let context = Context::create();
-                let mut compiler = Compiler::new(&context);
+                // let context = Context::create();
+                // let mut compiler = Compiler::new(&context);
 
                 rl.add_history_entry(line.as_str())?;
 
                 let parsed_program = Parser::new(&line).parse_program()?;
 
-                let value = compiler.compile(&Node::Program(parsed_program))?;
+                // let value = compiler.compile(&Node::Program(parsed_program))?;
 
-                println!("{}", value);
+                // println!("{}", value);
             }
             Err(ReadlineError::Interrupted) => {
                 println!("CTRL-C");

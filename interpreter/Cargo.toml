@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.75"
-compiler = { path = "../compiler" }
 env_logger = "0.10.0"
 inkwell = { version = "0.2.0", features = ["llvm16-0"] }
 lazy_static = "1.4.0"

@@ -5,41 +5,42 @@ use inkwell::{
     types::IntType,
     values::{BasicValueEnum, PointerValue},
 };
+use llvm::Llvm;
 use parser::ast::{Node, Program};
 
-pub struct RecursiveBuilder<'a> {
-    pub builder: &'a Builder<'a>,
+use super::expression::ExpressionBuilder;
 
-    pub bool_type: IntType<'a>,
-    pub i32_type: IntType<'a>,
+pub struct RecursiveBuilder<'a, 'b> {
+    pub llvm: &'b Llvm<'a>,
 
     pub builtins: RefCell<HashMap<String, PointerValue<'a>>>,
     pub variables: RefCell<HashMap<String, PointerValue<'a>>>,
 }
 
-impl<'a> RecursiveBuilder<'a> {
-    pub fn new(bool_type: IntType<'a>, i32_type: IntType<'a>, builder: &'a Builder<'_>) -> Self {
-        Self {
-            builder,
-            bool_type,
-            i32_type,
+impl<'ink, 'b> RecursiveBuilder<'ink, 'b> {
+    pub fn new(llvm: &'b Llvm<'ink>) -> RecursiveBuilder<'ink, 'b> {
+        RecursiveBuilder {
+            llvm,
             builtins: RefCell::new(HashMap::new()),
             variables: RefCell::new(HashMap::new()),
         }
     }
 
     /// Build a node
-    pub fn build(&self, ast: &Node) -> BasicValueEnum<'_> {
+    pub fn build(&self, ast: &Node) -> BasicValueEnum<'ink> {
         match ast {
             Node::Program(n) => self.build_program(n),
             Node::Statement(n) => self.build_statement(n),
-            Node::Expression(n) => self.build_expression(n),
+            Node::Expression(n) => {
+                let expression_builder = ExpressionBuilder::new(self.llvm);
+                expression_builder.build_expression(n)
+            },
             _ => panic!("Unknown node"),
         }
     }
 
     /// Build a program
-    fn build_program(&self, program: &Program) -> BasicValueEnum<'_> {
+    fn build_program(&self, program: &Program) -> BasicValueEnum<'ink> {
         let mut results: Vec<BasicValueEnum<'_>> = vec![];
 
         for statement in &program.statements {
@@ -49,7 +50,7 @@ impl<'a> RecursiveBuilder<'a> {
         let last = results
             .last()
             .cloned()
-            .unwrap_or_else(|| BasicValueEnum::IntValue(self.i32_type.const_int(0, false)));
+            .unwrap_or_else(|| BasicValueEnum::IntValue(self.llvm.i32_type().const_int(0, false)));
 
         last
     }
