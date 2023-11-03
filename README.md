@@ -1,4 +1,4 @@
-# php-rs
+# pine
 
 A minimalistic PHP interpreter.
 
@@ -31,8 +31,8 @@ Expect this list to grow 😁
 Ensure you have Rust and Cargo installed on your system. Clone the repository and navigate to the project root:
 
 ```bash
-git clone https://github.com/ZakFarmer/php-rs.git
-cd php-rs
+git clone https://github.com/ZakFarmer/pine.git
+cd pine
 ```
 
 To run the interpreter:
