@@ -2,7 +2,6 @@ use anyhow::Error;
 use inkwell::{
     builder::Builder,
     context::Context,
-    execution_engine::{ExecutionEngine, JitFunction},
     module::Module,
     types::BasicTypeEnum,
     values::{BasicValueEnum, GlobalValue, PointerValue},
@@ -92,7 +91,7 @@ impl<'ctx> Llvm<'ctx> {
         &self,
         name: &str,
         data_type: &BasicTypeEnum<'ctx>,
-        value: &BasicValueEnum<'ctx>,
+        _value: &BasicValueEnum<'ctx>,
     ) -> PointerValue<'ctx> {
         self.builder.build_alloca(*data_type, name)
     }

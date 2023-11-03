@@ -1,7 +1,7 @@
 use anyhow::{Error, Result};
 
-use inkwell::context::Context;
-use parser::{ast::Node, Parser};
+
+use parser::{Parser};
 use rustyline::error::ReadlineError;
 
 const PROMPT: &str = ">> ";
@@ -26,7 +26,7 @@ pub fn init_repl() -> Result<(), Error> {
 
                 rl.add_history_entry(line.as_str())?;
 
-                let parsed_program = Parser::new(&line).parse_program()?;
+                let _parsed_program = Parser::new(&line).parse_program()?;
 
                 // let value = compiler.compile(&Node::Program(parsed_program))?;
 

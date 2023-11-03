@@ -1,8 +1,6 @@
 use std::{cell::RefCell, collections::HashMap};
 
 use inkwell::{
-    builder::Builder,
-    types::IntType,
     values::{BasicValueEnum, PointerValue},
 };
 use llvm::Llvm;
