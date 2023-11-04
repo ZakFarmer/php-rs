@@ -14,6 +14,9 @@ jobs:
         with:
           toolchain: stable
       - name: Install LLVM
-        run: bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 16
       - name: Run testsuite
         run: cargo test
