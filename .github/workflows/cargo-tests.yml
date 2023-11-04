@@ -13,9 +13,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - name: Install LLVM and Clang
-        uses: KyleMayes/install-llvm-action@v1
-        with:
-          version: "16.0"
+      - name: Install LLVM
+        run: bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
       - name: Run testsuite
         run: cargo test
