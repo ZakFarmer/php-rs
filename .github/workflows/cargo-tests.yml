@@ -9,9 +9,7 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Setup toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@stable
       - name: Run testsuite
         run: cargo test
