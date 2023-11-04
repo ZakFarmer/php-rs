@@ -5,7 +5,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: pinelang/llvm-docker-rust:v1.0.0
+      image: pinelang/llvm-docker-rust:v1.0.1
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
